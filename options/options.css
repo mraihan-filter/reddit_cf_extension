@@ -11,6 +11,7 @@
 
 body {
   margin: 0;
+  overflow-x: hidden;
 }
 
 button,
@@ -95,6 +96,7 @@ small,
 
 .content {
   min-width: 0;
+  overflow-x: hidden;
   padding: 32px 14px 56px 22px;
 }
 
@@ -114,6 +116,7 @@ small,
 .view {
   display: none;
   max-width: none;
+  min-width: 0;
   padding-top: 4px;
   width: 100%;
 }
@@ -252,6 +255,7 @@ input[type="checkbox"]:disabled {
   margin: 0;
   min-height: 160px;
   overflow: auto;
+  overflow-wrap: anywhere;
   padding: 14px;
   white-space: pre-wrap;
 }
@@ -284,8 +288,10 @@ input[type="checkbox"]:disabled {
 .lab-layout {
   display: grid;
   gap: 16px;
-  grid-template-columns: minmax(420px, 0.85fr) minmax(520px, 1.15fr);
+  grid-template-columns: minmax(360px, 0.72fr) minmax(0, 1.28fr);
   margin-top: 18px;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .lab-workbench,
@@ -293,6 +299,10 @@ input[type="checkbox"]:disabled {
   display: grid;
   gap: 16px;
   min-width: 0;
+}
+
+.lab-workbench {
+  align-content: start;
 }
 
 .lab-input-card {
@@ -310,7 +320,11 @@ input[type="checkbox"]:disabled {
 }
 
 .lab-logs-layout {
-  grid-template-columns: minmax(300px, 0.8fr) minmax(360px, 1.2fr);
+  align-content: start;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.2fr);
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .logs-header {
@@ -351,6 +365,7 @@ input[type="checkbox"]:disabled {
   gap: 14px;
   grid-template-columns: minmax(420px, 0.92fr) minmax(520px, 1.08fr);
   min-height: 164px;
+  min-width: 0;
   padding: 16px;
   width: 100%;
 }
@@ -420,6 +435,7 @@ input[type="checkbox"]:disabled {
   color: #b9e4ff;
   font-size: 12px;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .log-inspector {
@@ -464,7 +480,45 @@ input[type="checkbox"]:disabled {
   font-size: 15px;
   font-weight: 800;
   line-height: 1.35;
+  overflow-wrap: anywhere;
   white-space: pre-wrap;
+}
+
+[data-view-panel="aiLab"] h2 {
+  margin-bottom: 8px;
+}
+
+[data-view-panel="aiLab"] .section-copy {
+  margin-bottom: 2px;
+}
+
+[data-view-panel="aiLab"] .field-card {
+  padding: 18px;
+}
+
+[data-view-panel="aiLab"] .logs-header {
+  align-items: center;
+  background: #121820;
+  border: 1px solid #33404a;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+[data-view-panel="aiLab"] .logs-list {
+  max-height: calc(100vh - 300px);
+}
+
+[data-view-panel="aiLab"] .detail-grid {
+  align-content: start;
+  grid-template-columns: 1fr;
+  max-height: calc(100vh - 300px);
+  min-width: 0;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+[data-view-panel="aiLab"] .log-item {
+  min-height: 132px;
 }
 
 #status {
