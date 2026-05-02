@@ -92,7 +92,8 @@ small,
 }
 
 .content {
-  padding: 32px 28px 56px;
+  min-width: 0;
+  padding: 32px 14px 56px 22px;
   position: relative;
 }
 
@@ -107,7 +108,7 @@ small,
   min-width: 330px;
   padding: 14px;
   position: absolute;
-  right: 24px;
+  right: 14px;
   top: 24px;
 }
 
@@ -128,8 +129,9 @@ small,
 
 .view {
   display: none;
-  max-width: 1080px;
+  max-width: none;
   padding-top: 4px;
+  width: 100%;
 }
 
 .view.active {
@@ -169,10 +171,11 @@ h3 {
 .panel {
   margin-top: 18px;
   overflow: hidden;
+  width: 100%;
 }
 
 .panel.narrow {
-  max-width: 760px;
+  max-width: none;
 }
 
 .empty-panel {
@@ -194,6 +197,21 @@ h3 {
   border-top: 0;
 }
 
+[data-view-panel="cleanup"] .panel {
+  background: transparent;
+  border: 0;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  overflow: visible;
+}
+
+[data-view-panel="cleanup"] .toggle-row {
+  background: #121820;
+  border: 1px solid #33404a;
+  border-radius: 8px;
+}
+
 input[type="checkbox"] {
   accent-color: #ff4500;
   flex: 0 0 auto;
@@ -208,8 +226,9 @@ input[type="checkbox"]:disabled {
 .form-grid {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
   margin-top: 16px;
+  width: 100%;
 }
 
 .field-card {
@@ -264,14 +283,17 @@ input[type="checkbox"]:disabled {
 .logs-layout {
   display: grid;
   gap: 14px;
-  grid-template-columns: minmax(360px, 1fr) minmax(420px, 1.1fr);
+  grid-template-columns: minmax(420px, 0.92fr) minmax(520px, 1.08fr);
+  min-height: 164px;
   padding: 16px;
+  width: 100%;
 }
 
 .logs-list {
   display: grid;
   gap: 10px;
-  max-height: 660px;
+  max-height: calc(100vh - 260px);
+  min-height: 146px;
   overflow: auto;
 }
 
@@ -338,7 +360,7 @@ input[type="checkbox"]:disabled {
 .detail-grid {
   display: grid;
   gap: 8px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   margin-top: 8px;
 }
 
