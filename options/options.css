@@ -92,24 +92,24 @@ small,
 }
 
 .content {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   padding: 32px 14px 56px 22px;
-  position: relative;
 }
 
 .master-toggle {
   align-items: center;
+  align-self: flex-end;
   background: #121820;
   border: 1px solid #8c3a20;
   border-radius: 8px;
   display: flex;
   gap: 18px;
   justify-content: space-between;
+  margin-bottom: 26px;
   min-width: 330px;
   padding: 14px;
-  position: absolute;
-  right: 14px;
-  top: 24px;
 }
 
 .master-toggle strong,
@@ -290,6 +290,7 @@ input[type="checkbox"]:disabled {
 }
 
 .logs-list {
+  align-content: start;
   display: grid;
   gap: 10px;
   max-height: calc(100vh - 260px);
@@ -298,13 +299,15 @@ input[type="checkbox"]:disabled {
 }
 
 .log-item {
+  align-content: start;
   background: #1a222a;
   border: 1px solid transparent;
   border-radius: 8px;
   color: #f7f9fb;
   cursor: pointer;
   display: grid;
-  gap: 72px;
+  gap: 18px;
+  grid-template-rows: auto auto auto;
   min-height: 150px;
   padding: 14px;
   text-align: left;
