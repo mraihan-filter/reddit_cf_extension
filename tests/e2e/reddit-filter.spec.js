@@ -66,6 +66,9 @@ test.describe("Reddit content filter extension", () => {
     const { context, page } = await openRedditFixture(testInfo);
 
     try {
+      await expect.poll(async () => {
+        return page.locator("#reddit-content-filter-prefilter").evaluate((style) => style.textContent);
+      }).toContain(".main-container:has(#main-content, #right-sidebar-container)");
       await expect(page.getByTestId("homepage-content")).toBeHidden();
       await expect(page.getByTestId("home-nav-section")).toBeVisible();
     } finally {

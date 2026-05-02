@@ -1,10 +1,12 @@
 const FILTERED_ATTRIBUTE = "data-rcf-filtered";
 const FILTERED_PREVIOUS_DISPLAY_ATTRIBUTE = "data-rcf-previous-display";
 const SETTINGS_KEY = "redditContentFilterSettings";
+const PREFILTER_STYLE_ID = "reddit-content-filter-prefilter";
 
 const GAMES_ON_REDDIT_SELECTOR = 'faceplate-tracker[source="nav"][action="view"][noun="games_drawer"]';
 const LEFT_RECENT_SELECTOR = "#recent-communities-section";
 const HOMEPAGE_CONTENT_SELECTOR = ".main-container";
+const HOMEPAGE_CONTENT_READY_SELECTOR = `${HOMEPAGE_CONTENT_SELECTOR}:has(#main-content, #right-sidebar-container)`;
 const DEFAULT_SETTINGS = {
   enabled: true,
   hideGamesOnReddit: true,
@@ -14,6 +16,55 @@ const DEFAULT_SETTINGS = {
 
 let currentSettings = { ...DEFAULT_SETTINGS };
 let observer;
+
+function buildPrefilterCss(settings) {
+  if (!settings.enabled) {
+    return "";
+  }
+
+  const selectors = [];
+
+  if (settings.hideGamesOnReddit) {
+    selectors.push(GAMES_ON_REDDIT_SELECTOR);
+  }
+
+  if (settings.hideLeftRecent) {
+    selectors.push(LEFT_RECENT_SELECTOR);
+  }
+
+  if (settings.hideHomepageContent && isRedditHomepage()) {
+    selectors.push(HOMEPAGE_CONTENT_READY_SELECTOR);
+  }
+
+  if (selectors.length === 0) {
+    return "";
+  }
+
+  return `${selectors.join(",")} { display: none !important; }`;
+}
+
+function removePrefilterStyle() {
+  document.getElementById(PREFILTER_STYLE_ID)?.remove();
+}
+
+function applyPrefilterStyle(settings = currentSettings) {
+  const css = buildPrefilterCss(settings);
+
+  if (!css) {
+    removePrefilterStyle();
+    return;
+  }
+
+  let style = document.getElementById(PREFILTER_STYLE_ID);
+
+  if (!style) {
+    style = document.createElement("style");
+    style.id = PREFILTER_STYLE_ID;
+    (document.head || document.documentElement).append(style);
+  }
+
+  style.textContent = css;
+}
 
 function hideElement(element) {
   if (!element || element.getAttribute(FILTERED_ATTRIBUTE) === "true") {
@@ -76,20 +127,16 @@ function hideAlwaysBlockedSections() {
 
 function hideHomepageContent() {
   if (!isRedditHomepage() || !currentSettings.hideHomepageContent) {
-    showElements(HOMEPAGE_CONTENT_SELECTOR);
+    showElements(HOMEPAGE_CONTENT_READY_SELECTOR);
     return 0;
   }
 
-  const homepageContent = document.querySelector(HOMEPAGE_CONTENT_SELECTOR);
-  const hasHomeRegions =
-    homepageContent &&
-    homepageContent.querySelector("#main-content, #right-sidebar-container");
-
-  return hasHomeRegions && hideElement(homepageContent) ? 1 : 0;
+  return hideElement(document.querySelector(HOMEPAGE_CONTENT_READY_SELECTOR)) ? 1 : 0;
 }
 
 function filterDocument() {
   if (!currentSettings.enabled) {
+    removePrefilterStyle();
     showAllFilteredElements();
     return 0;
   }
@@ -125,10 +172,12 @@ function applySettings(settings) {
 
   if (!currentSettings.enabled) {
     stopObserver();
+    removePrefilterStyle();
     showAllFilteredElements();
     return;
   }
 
+  applyPrefilterStyle(currentSettings);
   ensureObserver();
   filterDocument();
 }
@@ -167,23 +216,19 @@ function startFiltering() {
   }
 }
 
+applyPrefilterStyle(currentSettings);
+ensureObserver();
+filterDocument();
+
 loadSettings()
   .then((settings) => {
-    currentSettings = settings;
-
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", startFiltering, { once: true });
-    } else {
-      startFiltering();
-    }
+    applySettings(settings);
   })
   .catch(() => {
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", startFiltering, { once: true });
-    } else {
-      startFiltering();
-    }
+    applySettings(DEFAULT_SETTINGS);
   });
+
+startFiltering();
 
 globalThis.redditContentFilter = {
   applySettings,
