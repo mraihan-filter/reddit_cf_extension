@@ -101,6 +101,17 @@ test.describe("Reddit content filter extension", () => {
     }
   });
 
+  test("hides search dropdown communities and profiles", async ({}, testInfo) => {
+    const { context, page } = await openRedditFixture(testInfo, "https://www.reddit.com/r/all/");
+
+    try {
+      await expect(page.getByTestId("search-communities-section")).toBeHidden();
+      await expect(page.getByTestId("search-profiles-section")).toBeHidden();
+    } finally {
+      await context.close();
+    }
+  });
+
   test("master disable restores all filtered page sections", async ({}, testInfo) => {
     const { context, page } = await openRedditFixture(testInfo);
 
@@ -133,10 +144,14 @@ test.describe("Reddit content filter extension", () => {
       await optionsPage.goto(`chrome-extension://${extensionId}/options.html`);
       await setOption(optionsPage, "hideGamesOnReddit", false);
       await setOption(optionsPage, "hideHomepageContent", false);
+      await setOption(optionsPage, "hideSearchCommunities", false);
+      await setOption(optionsPage, "hideSearchProfiles", false);
 
       await expect(page.getByTestId("games-on-reddit-section")).toBeVisible();
       await expect(page.getByTestId("left-recent-section")).toBeHidden();
       await expect(page.getByTestId("homepage-content")).toBeVisible();
+      await expect(page.getByTestId("search-communities-section")).toBeVisible();
+      await expect(page.getByTestId("search-profiles-section")).toBeVisible();
     } finally {
       await context.close();
     }

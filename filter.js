@@ -7,17 +7,22 @@ const GAMES_ON_REDDIT_SELECTOR = 'faceplate-tracker[source="nav"][action="view"]
 const LEFT_RECENT_SELECTOR = "#recent-communities-section";
 const HOMEPAGE_CONTENT_SELECTOR = ".main-container";
 const HOMEPAGE_CONTENT_READY_SELECTOR = `${HOMEPAGE_CONTENT_SELECTOR}:has(#main-content, #right-sidebar-container)`;
+const SEARCH_COMMUNITIES_SELECTOR = "#subreddit_typeahead_section";
+const SEARCH_PROFILES_SELECTOR = "#profile_typeahead_section";
 const DEFAULT_SETTINGS = {
   enabled: true,
   hideGamesOnReddit: true,
   hideLeftRecent: true,
-  hideHomepageContent: true
+  hideHomepageContent: true,
+  hideSearchCommunities: true,
+  hideSearchProfiles: true
 };
 
 let currentSettings = { ...DEFAULT_SETTINGS };
 let observer;
 let currentUrl = location.href;
 let routeWatcherInstalled = false;
+const observedRoots = new WeakSet();
 
 function buildPrefilterCss(settings) {
   if (!settings.enabled) {
@@ -97,11 +102,23 @@ function showElement(element) {
 }
 
 function showElements(selector) {
-  document.querySelectorAll(selector).forEach(showElement);
+  queryDeepAll(selector).forEach(showElement);
 }
 
 function showAllFilteredElements() {
-  document.querySelectorAll(`[${FILTERED_ATTRIBUTE}="true"]`).forEach(showElement);
+  queryDeepAll(`[${FILTERED_ATTRIBUTE}="true"]`).forEach(showElement);
+}
+
+function queryDeepAll(selector, root = document) {
+  const matches = Array.from(root.querySelectorAll(selector));
+
+  for (const element of root.querySelectorAll("*")) {
+    if (element.shadowRoot) {
+      matches.push(...queryDeepAll(selector, element.shadowRoot));
+    }
+  }
+
+  return matches;
 }
 
 function isRedditHomepage() {
@@ -136,6 +153,32 @@ function hideHomepageContent() {
   return hideElement(document.querySelector(HOMEPAGE_CONTENT_READY_SELECTOR)) ? 1 : 0;
 }
 
+function hideSearchDropdownSections() {
+  let hiddenCount = 0;
+
+  if (currentSettings.hideSearchCommunities) {
+    for (const element of queryDeepAll(SEARCH_COMMUNITIES_SELECTOR)) {
+      if (hideElement(element)) {
+        hiddenCount += 1;
+      }
+    }
+  } else {
+    showElements(SEARCH_COMMUNITIES_SELECTOR);
+  }
+
+  if (currentSettings.hideSearchProfiles) {
+    for (const element of queryDeepAll(SEARCH_PROFILES_SELECTOR)) {
+      if (hideElement(element)) {
+        hiddenCount += 1;
+      }
+    }
+  } else {
+    showElements(SEARCH_PROFILES_SELECTOR);
+  }
+
+  return hiddenCount;
+}
+
 function filterDocument() {
   if (!currentSettings.enabled) {
     removePrefilterStyle();
@@ -143,7 +186,9 @@ function filterDocument() {
     return 0;
   }
 
-  return hideAlwaysBlockedSections() + hideHomepageContent();
+  observeShadowRoots();
+
+  return hideAlwaysBlockedSections() + hideHomepageContent() + hideSearchDropdownSections();
 }
 
 function reconcileRoute() {
@@ -189,8 +234,30 @@ function installRouteWatcher() {
   window.addEventListener("popstate", handlePossibleRouteChange);
 }
 
+function observeRoot(root) {
+  if (!observer || observedRoots.has(root)) {
+    return;
+  }
+
+  observer.observe(root, {
+    childList: true,
+    subtree: true
+  });
+  observedRoots.add(root);
+}
+
+function observeShadowRoots(root = document) {
+  for (const element of root.querySelectorAll("*")) {
+    if (element.shadowRoot) {
+      observeRoot(element.shadowRoot);
+      observeShadowRoots(element.shadowRoot);
+    }
+  }
+}
+
 function ensureObserver() {
   if (observer) {
+    observeShadowRoots();
     return;
   }
 
@@ -199,10 +266,8 @@ function ensureObserver() {
     filterDocument();
   });
 
-  observer.observe(document.documentElement, {
-    childList: true,
-    subtree: true
-  });
+  observeRoot(document.documentElement);
+  observeShadowRoots();
 }
 
 function stopObserver() {

@@ -45,5 +45,28 @@
         </aside>
       </div>
     </div>
+
+    <reddit-search-large id="search-fixture"></reddit-search-large>
+
+    <script>
+      const searchRoot = document.getElementById("search-fixture").attachShadow({ mode: "open" });
+      searchRoot.innerHTML = `
+        <div id="search-dropdown-results-container">
+          <ul id="reddit-typeahead-results-partial-container">
+            <div id="subreddit_typeahead_section" data-testid="search-communities-section">
+              <div>Communities</div>
+              <search-telemetry-tracker data-type="search-dropdown-item">r/Raihan_Khan</search-telemetry-tracker>
+              <search-telemetry-tracker data-type="search-dropdown-item">r/DawgCult</search-telemetry-tracker>
+            </div>
+
+            <div id="profile_typeahead_section" data-testid="search-profiles-section">
+              <div>Profiles</div>
+              <search-telemetry-tracker data-type="search-dropdown-item">u/aydinraihan</search-telemetry-tracker>
+              <search-telemetry-tracker data-type="search-dropdown-item">u/bungiri</search-telemetry-tracker>
+            </div>
+          </ul>
+        </div>
+      `;
+    </script>
   </body>
 </html>

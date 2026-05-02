@@ -3,7 +3,9 @@ const DEFAULT_SETTINGS = {
   enabled: true,
   hideGamesOnReddit: true,
   hideLeftRecent: true,
-  hideHomepageContent: true
+  hideHomepageContent: true,
+  hideSearchCommunities: true,
+  hideSearchProfiles: true
 };
 
 const controls = Object.fromEntries(
