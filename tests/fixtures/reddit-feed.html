@@ -5,33 +5,45 @@
     <title>Reddit Fixture</title>
   </head>
   <body>
-    <nav aria-label="Primary">
-      <section data-testid="home-nav-section">
-        <h2>Home</h2>
-        <a href="/">Home</a>
-      </section>
+    <reddit-sidebar-nav id="left-sidebar">
+      <nav aria-label="Primary">
+        <section data-testid="home-nav-section">
+          <a href="/">Home</a>
+        </section>
 
-      <section data-testid="games-on-reddit-section">
-        <h2>Games on Reddit</h2>
-        <a href="/games/bubble-shooter-pro">Bubble Shooter Pro</a>
-        <a href="/games/hot-and-cold">Hot and Cold</a>
-      </section>
+        <faceplate-tracker source="nav" action="view" noun="games_drawer" data-testid="games-on-reddit-section">
+          <games-section-badge-controller>
+            <details open>
+              <summary aria-controls="games_section" aria-expanded="true">Games on Reddit</summary>
+              <a href="/games/bubble-shooter-pro">Bubble Shooter Pro</a>
+            </details>
+          </games-section-badge-controller>
+        </faceplate-tracker>
 
-      <section data-testid="left-recent-section">
-        <h2>Recent</h2>
-        <a href="/r/example">r/example</a>
-      </section>
-    </nav>
+        <div id="recent-communities-section" data-testid="left-recent-section">
+          <details open>
+            <summary aria-controls="RECENT" aria-expanded="true">Recent</summary>
+            <a href="/r/example">r/example</a>
+          </details>
+        </div>
+      </nav>
+    </reddit-sidebar-nav>
 
-    <main data-testid="home-feed" data-rcf-region="home-feed">
-      <article>
-        <h2>Homepage feed post</h2>
-      </article>
-    </main>
+    <div class="main-container" data-testid="homepage-content">
+      <main id="main-content" data-testid="home-feed">
+        <article>
+          <h2>Homepage feed post</h2>
+        </article>
+      </main>
 
-    <aside data-testid="right-recent-posts" data-rcf-region="right-recent-posts" aria-label="Recent posts">
-      <h2>Recent posts</h2>
-      <a href="/r/example/comments/1">A recent post</a>
-    </aside>
+      <div id="right-sidebar-container">
+        <aside data-testid="right-recent-posts" aria-label="Recent Posts">
+          <recent-posts>
+            <h2>Recent posts</h2>
+            <a href="/r/example/comments/1">A recent post</a>
+          </recent-posts>
+        </aside>
+      </div>
+    </div>
   </body>
 </html>

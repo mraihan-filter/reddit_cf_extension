@@ -32,12 +32,11 @@ async function openRedditFixture(testInfo, url = "https://www.reddit.com/") {
 }
 
 test.describe("Reddit content filter extension", () => {
-  test("hides homepage feed and right recent posts on the Reddit homepage", async ({}, testInfo) => {
+  test("hides the homepage content wrapper on the Reddit homepage", async ({}, testInfo) => {
     const { context, page } = await openRedditFixture(testInfo);
 
     try {
-      await expect(page.getByTestId("home-feed")).toBeHidden();
-      await expect(page.getByTestId("right-recent-posts")).toBeHidden();
+      await expect(page.getByTestId("homepage-content")).toBeHidden();
       await expect(page.getByTestId("home-nav-section")).toBeVisible();
     } finally {
       await context.close();
@@ -48,8 +47,7 @@ test.describe("Reddit content filter extension", () => {
     const { context, page } = await openRedditFixture(testInfo, "https://www.reddit.com/r/all/");
 
     try {
-      await expect(page.getByTestId("home-feed")).toBeVisible();
-      await expect(page.getByTestId("right-recent-posts")).toBeVisible();
+      await expect(page.getByTestId("homepage-content")).toBeVisible();
     } finally {
       await context.close();
     }

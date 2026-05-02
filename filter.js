@@ -1,23 +1,8 @@
 const FILTERED_ATTRIBUTE = "data-rcf-filtered";
 
-const ALWAYS_HIDE_SECTION_HEADINGS = ["games on reddit", "recent"];
-const HOME_FEED_SELECTORS = [
-  '[data-rcf-region="home-feed"]',
-  "main",
-  '[role="main"]'
-];
-const RIGHT_RECENT_POSTS_SELECTORS = [
-  '[data-rcf-region="right-recent-posts"]',
-  'aside[aria-label*="recent posts" i]',
-  '[aria-label*="recent posts" i]'
-];
-
-function normalizeText(value) {
-  return String(value || "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-}
+const GAMES_ON_REDDIT_SELECTOR = 'faceplate-tracker[source="nav"][action="view"][noun="games_drawer"]';
+const LEFT_RECENT_SELECTOR = "#recent-communities-section";
+const HOMEPAGE_CONTENT_SELECTOR = ".main-container";
 
 function hideElement(element) {
   if (!element || element.getAttribute(FILTERED_ATTRIBUTE) === "true") {
@@ -34,65 +19,35 @@ function isRedditHomepage() {
   return host === "reddit.com" && location.pathname === "/";
 }
 
-function findSectionContainerFromHeading(heading) {
-  return (
-    heading.closest("section") ||
-    heading.closest("reddit-sidebar-nav-section") ||
-    heading.closest("[data-rcf-section]") ||
-    heading.parentElement
-  );
-}
-
-function hideLeftNavSections() {
+function hideAlwaysBlockedSections() {
   let hiddenCount = 0;
 
-  document.querySelectorAll("nav h1, nav h2, nav h3, nav h4, nav h5, nav h6, nav summary, nav [aria-label], nav [data-rcf-heading]").forEach((element) => {
-    const label = normalizeText(
-      element.getAttribute("aria-label") ||
-        element.getAttribute("data-rcf-heading") ||
-        element.textContent
-    );
+  if (hideElement(document.querySelector(GAMES_ON_REDDIT_SELECTOR))) {
+    hiddenCount += 1;
+  }
 
-    if (!ALWAYS_HIDE_SECTION_HEADINGS.includes(label)) {
-      return;
-    }
-
-    if (hideElement(findSectionContainerFromHeading(element))) {
-      hiddenCount += 1;
-    }
-  });
+  if (hideElement(document.querySelector(LEFT_RECENT_SELECTOR))) {
+    hiddenCount += 1;
+  }
 
   return hiddenCount;
 }
 
-function hideHomepageRegions() {
+function hideHomepageContent() {
   if (!isRedditHomepage()) {
     return 0;
   }
 
-  let hiddenCount = 0;
+  const homepageContent = document.querySelector(HOMEPAGE_CONTENT_SELECTOR);
+  const hasHomeRegions =
+    homepageContent &&
+    homepageContent.querySelector("#main-content, #right-sidebar-container");
 
-  for (const selector of HOME_FEED_SELECTORS) {
-    const element = document.querySelector(selector);
-    if (element && hideElement(element)) {
-      hiddenCount += 1;
-      break;
-    }
-  }
-
-  for (const selector of RIGHT_RECENT_POSTS_SELECTORS) {
-    const element = document.querySelector(selector);
-    if (element && hideElement(element)) {
-      hiddenCount += 1;
-      break;
-    }
-  }
-
-  return hiddenCount;
+  return hasHomeRegions && hideElement(homepageContent) ? 1 : 0;
 }
 
 function filterDocument() {
-  return hideLeftNavSections() + hideHomepageRegions();
+  return hideAlwaysBlockedSections() + hideHomepageContent();
 }
 
 function startFiltering() {
