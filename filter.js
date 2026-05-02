@@ -16,6 +16,8 @@ const DEFAULT_SETTINGS = {
 
 let currentSettings = { ...DEFAULT_SETTINGS };
 let observer;
+let currentUrl = location.href;
+let routeWatcherInstalled = false;
 
 function buildPrefilterCss(settings) {
   if (!settings.enabled) {
@@ -144,12 +146,56 @@ function filterDocument() {
   return hideAlwaysBlockedSections() + hideHomepageContent();
 }
 
+function reconcileRoute() {
+  applyPrefilterStyle(currentSettings);
+
+  if (!isRedditHomepage()) {
+    showElements(HOMEPAGE_CONTENT_READY_SELECTOR);
+  }
+
+  filterDocument();
+}
+
+function handlePossibleRouteChange() {
+  if (currentUrl === location.href) {
+    return;
+  }
+
+  currentUrl = location.href;
+  reconcileRoute();
+}
+
+function installRouteWatcher() {
+  if (routeWatcherInstalled) {
+    return;
+  }
+
+  routeWatcherInstalled = true;
+  const originalPushState = history.pushState;
+  const originalReplaceState = history.replaceState;
+
+  history.pushState = function pushState(...args) {
+    const result = originalPushState.apply(this, args);
+    queueMicrotask(handlePossibleRouteChange);
+    return result;
+  };
+
+  history.replaceState = function replaceState(...args) {
+    const result = originalReplaceState.apply(this, args);
+    queueMicrotask(handlePossibleRouteChange);
+    return result;
+  };
+
+  window.addEventListener("popstate", handlePossibleRouteChange);
+}
+
 function ensureObserver() {
   if (observer) {
     return;
   }
 
   observer = new MutationObserver(() => {
+    handlePossibleRouteChange();
     filterDocument();
   });
 
@@ -195,6 +241,7 @@ async function loadSettings() {
 }
 
 function startFiltering() {
+  installRouteWatcher();
   applySettings(currentSettings);
 
   if (globalThis.chrome?.storage?.onChanged) {

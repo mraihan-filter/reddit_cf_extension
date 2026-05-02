@@ -80,6 +80,9 @@ test.describe("Reddit content filter extension", () => {
     const { context, page } = await openRedditFixture(testInfo, "https://www.reddit.com/r/all/");
 
     try {
+      await expect.poll(async () => {
+        return page.locator("#reddit-content-filter-prefilter").evaluate((style) => style.textContent);
+      }).not.toContain(".main-container:has(#main-content, #right-sidebar-container)");
       await expect(page.getByTestId("homepage-content")).toBeVisible();
     } finally {
       await context.close();
@@ -134,6 +137,26 @@ test.describe("Reddit content filter extension", () => {
       await expect(page.getByTestId("games-on-reddit-section")).toBeVisible();
       await expect(page.getByTestId("left-recent-section")).toBeHidden();
       await expect(page.getByTestId("homepage-content")).toBeVisible();
+    } finally {
+      await context.close();
+    }
+  });
+
+  test("restores homepage content after client-side navigation away from home", async ({}, testInfo) => {
+    const { context, page } = await openRedditFixture(testInfo);
+
+    try {
+      await expect(page.getByTestId("homepage-content")).toBeHidden();
+
+      await page.evaluate(() => {
+        history.pushState({}, "", "/r/example/");
+        document.body.append(document.createElement("span"));
+      });
+
+      await expect(page.getByTestId("homepage-content")).toBeVisible();
+      await expect.poll(async () => {
+        return page.locator("#reddit-content-filter-prefilter").evaluate((style) => style.textContent);
+      }).not.toContain(".main-container:has(#main-content, #right-sidebar-container)");
     } finally {
       await context.close();
     }
