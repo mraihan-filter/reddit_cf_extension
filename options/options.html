@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Reddit Content Filter Options</title>
+    <link rel="stylesheet" href="options.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Options sections">
+        <div class="brand">
+          <div class="brand-mark">RCF</div>
+          <div>
+            <h1>Reddit Content Filter</h1>
+            <p>Local controls for Reddit cleanup.</p>
+          </div>
+        </div>
+
+        <nav class="nav-list">
+          <button class="nav-item active" type="button" data-view="general">General</button>
+          <button class="nav-item" type="button" data-view="urlBlocking">URL Blocking</button>
+          <button class="nav-item" type="button" data-view="cleanup">Reddit Cleanup</button>
+          <button class="nav-item" type="button" data-view="aiGate">AI Gate</button>
+          <button class="nav-item" type="button" data-view="logs">Runtime Logs</button>
+        </nav>
+      </aside>
+
+      <main class="content">
+        <label class="master-toggle">
+          <span>
+            <strong>Extension enabled</strong>
+            <small>Registers Reddit content filters when enabled.</small>
+          </span>
+          <input id="enabled" type="checkbox">
+        </label>
+
+        <section class="view active" data-view-panel="general">
+          <p class="eyebrow">Options</p>
+          <h2>General</h2>
+          <div class="panel narrow">
+            <label class="toggle-row">
+              <span>
+                <strong>Extension enabled</strong>
+                <small>Master switch for all filtering and AI gate behavior.</small>
+              </span>
+              <input data-setting="enabled" type="checkbox">
+            </label>
+          </div>
+        </section>
+
+        <section class="view" data-view-panel="urlBlocking">
+          <p class="eyebrow">Options</p>
+          <h2>URL Blocking</h2>
+          <div class="empty-panel">URL inspection rules will be added after page-element filtering is stable.</div>
+        </section>
+
+        <section class="view" data-view-panel="cleanup">
+          <p class="eyebrow">Options</p>
+          <h2>Reddit Cleanup</h2>
+          <div class="panel">
+            <label class="toggle-row">
+              <span>
+                <strong>Hide Games on Reddit</strong>
+                <small>Left navigation games drawer.</small>
+              </span>
+              <input data-setting="hideGamesOnReddit" type="checkbox">
+            </label>
+            <label class="toggle-row">
+              <span>
+                <strong>Hide left Recent</strong>
+                <small>Recent communities in the left navigation.</small>
+              </span>
+              <input data-setting="hideLeftRecent" type="checkbox">
+            </label>
+            <label class="toggle-row">
+              <span>
+                <strong>Hide homepage feed and sidebar</strong>
+                <small>Main homepage content wrapper.</small>
+              </span>
+              <input data-setting="hideHomepageContent" type="checkbox">
+            </label>
+            <label class="toggle-row">
+              <span>
+                <strong>Hide search Communities</strong>
+                <small>Community suggestions in the search dropdown.</small>
+              </span>
+              <input data-setting="hideSearchCommunities" type="checkbox">
+            </label>
+            <label class="toggle-row">
+              <span>
+                <strong>Hide search Profiles</strong>
+                <small>Profile suggestions in the search dropdown.</small>
+              </span>
+              <input data-setting="hideSearchProfiles" type="checkbox">
+            </label>
+            <label class="toggle-row">
+              <span>
+                <strong>Hide over-18 confirmation</strong>
+                <small>"Yes, I'm over 18" button on blocked community pages.</small>
+              </span>
+              <input data-setting="hideBlockedCommunityOver18Button" type="checkbox">
+            </label>
+            <label class="toggle-row">
+              <span>
+                <strong>Hide mature content setting</strong>
+                <small>"Show mature content" row on Reddit preferences.</small>
+              </span>
+              <input data-setting="hideSettingsMatureContentRow" type="checkbox">
+            </label>
+          </div>
+        </section>
+
+        <section class="view" data-view-panel="aiGate">
+          <p class="eyebrow">Options</p>
+          <h2>AI Gate</h2>
+          <h3>AI Search Review</h3>
+          <p class="section-copy">Gate Reddit search pages through OpenRouter before showing results.</p>
+
+          <div class="panel">
+            <label class="toggle-row">
+              <span>
+                <strong>Review search pages with AI</strong>
+                <small>Uses cached verdicts first, then OpenRouter on cache miss.</small>
+              </span>
+              <input data-setting="reviewSearchPagesWithAi" type="checkbox">
+            </label>
+          </div>
+
+          <div class="form-grid">
+            <label class="field-card">
+              <strong>OpenRouter API key</strong>
+              <small>Stored locally in this browser only.</small>
+              <input id="openRouterApiKey" autocomplete="off" spellcheck="false" type="password">
+            </label>
+            <label class="field-card">
+              <strong>OpenRouter model</strong>
+              <small>Example: google/gemini-2.5-flash-lite</small>
+              <input id="openRouterModel" autocomplete="off" spellcheck="false" type="text">
+            </label>
+          </div>
+        </section>
+
+        <section class="view" data-view-panel="logs">
+          <div class="logs-header">
+            <div>
+              <p class="eyebrow">Runtime Logs</p>
+              <h2>Recent live AI queries</h2>
+              <strong class="small-heading">Logged searches</strong>
+            </div>
+            <div class="log-actions">
+              <button id="downloadLogs" type="button">Download JSON</button>
+              <button id="clearCache" type="button">Clear cache</button>
+              <button id="clearLogs" type="button">Clear all</button>
+              <button id="removeLog" type="button">Remove</button>
+            </div>
+          </div>
+
+          <div class="logs-layout">
+            <div id="logsList" class="logs-list" aria-label="Logged searches"></div>
+            <div class="log-inspector">
+              <span id="logCount" class="count-pill">0</span>
+              <p class="eyebrow">Inspector</p>
+              <h3>Selected runtime log</h3>
+              <div id="logDetails" class="detail-grid"></div>
+            </div>
+          </div>
+        </section>
+
+        <p id="status" role="status" aria-live="polite"></p>
+      </main>
+    </div>
+
+    <script src="options.js"></script>
+  </body>
+</html>
