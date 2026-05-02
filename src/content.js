@@ -37,6 +37,15 @@ const DEFAULT_AI_SETTINGS = {
   openRouterApiKey: "",
   openRouterModel: "google/gemini-2.5-flash-lite"
 };
+const CATEGORY_LABELS = {
+  1: "Female name of any locale or nationality",
+  2: "Performative entertainment title or personality",
+  3: "Human sexuality content or product",
+  4: "NSFW content or product",
+  5: "Female apparel",
+  6: "Common human body-part term",
+  7: "Obfuscated fragment"
+};
 
 let currentSettings = { ...DEFAULT_SETTINGS };
 let observer;
@@ -270,7 +279,11 @@ function filterDocument() {
   return hideAlwaysBlockedSections() + hideHomepageContent() + hideSearchDropdownSections() + hideBlockedCommunityModalActions() + hideSettingsRows();
 }
 
-function ensureAiOverlay(mode, text) {
+function getCategoryLabels(categories = []) {
+  return categories.map((category) => CATEGORY_LABELS[category] || `Category ${category}`);
+}
+
+function ensureAiOverlay(mode, text, categories = []) {
   let overlay = document.getElementById(OVERLAY_ID);
 
   if (!overlay) {
@@ -283,8 +296,22 @@ function ensureAiOverlay(mode, text) {
         <div class="rcf-ai-spinner" aria-hidden="true"></div>
         <strong class="rcf-ai-title"></strong>
         <span class="rcf-ai-copy"></span>
+        <ul class="rcf-ai-reasons"></ul>
+        <div class="rcf-ai-actions">
+          <button class="rcf-ai-action rcf-ai-back" type="button" data-rcf-action="back" aria-label="Go back" title="Go back"></button>
+          <button class="rcf-ai-action rcf-ai-home" type="button" data-rcf-action="home" aria-label="Go home" title="Go home"></button>
+        </div>
       </div>
     `;
+    overlay.addEventListener("click", (event) => {
+      const action = event.target?.closest?.("[data-rcf-action]")?.dataset.rcfAction;
+
+      if (action === "back") {
+        history.back();
+      } else if (action === "home") {
+        location.assign("https://www.reddit.com/");
+      }
+    });
     (document.documentElement || document.body).append(overlay);
   }
 
@@ -295,6 +322,14 @@ function ensureAiOverlay(mode, text) {
   overlay.dataset.mode = mode;
   overlay.querySelector(".rcf-ai-title").textContent = mode === "blocked" ? "Search blocked" : "Reviewing search";
   overlay.querySelector(".rcf-ai-copy").textContent = text;
+
+  const reasons = overlay.querySelector(".rcf-ai-reasons");
+  reasons.textContent = "";
+  for (const label of getCategoryLabels(categories)) {
+    const item = document.createElement("li");
+    item.textContent = label;
+    reasons.append(item);
+  }
 }
 
 function removeAiOverlay() {
@@ -512,7 +547,7 @@ async function reviewCurrentSearchPage() {
         roundTripMs: Math.round(performance.now() - roundTripStartedAt)
       });
       await appendRuntimeLog(log);
-      applyAiVerdict(cached.decision, "Cached search verdict blocked this page.");
+      applyAiVerdict(cached.decision, "Cached search verdict blocked this page.", cached.categories || []);
       return;
     }
 
@@ -558,7 +593,7 @@ async function reviewCurrentSearchPage() {
       roundTripMs: Math.round(performance.now() - roundTripStartedAt)
     }));
 
-    applyAiVerdict(parsed.decision, "This search was blocked by the AI review.");
+    applyAiVerdict(parsed.decision, "This search was blocked by the AI review.", parsed.categories);
   } catch (error) {
     if (reviewId !== activeSearchReviewId) {
       return;
@@ -574,13 +609,13 @@ async function reviewCurrentSearchPage() {
   }
 }
 
-function applyAiVerdict(decision, blockedText) {
+function applyAiVerdict(decision, blockedText, categories = []) {
   if (decision === "allow") {
     removeAiOverlay();
     return;
   }
 
-  ensureAiOverlay("blocked", blockedText);
+  ensureAiOverlay("blocked", blockedText, categories);
 }
 
 function reconcileRoute() {

@@ -1,6 +1,7 @@
 #reddit-content-filter-ai-overlay {
   align-items: center;
-  background: rgba(6, 10, 12, 0.96);
+  backdrop-filter: blur(18px) brightness(0.18);
+  background: rgba(0, 4, 6, 0.985);
   bottom: 0;
   color: #f7f9fb;
   display: flex;
@@ -16,13 +17,13 @@
 #reddit-content-filter-ai-overlay .rcf-ai-card {
   align-items: center;
   background: #141a20;
-  border: 1px solid #39434d;
+  border: 1px solid #52606c;
   border-radius: 8px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-width: 360px;
+  max-width: 440px;
   padding: 26px;
   text-align: center;
 }
@@ -54,6 +55,96 @@
   display: block;
   font-size: 13px;
   line-height: 1.4;
+}
+
+#reddit-content-filter-ai-overlay .rcf-ai-reasons {
+  color: #f7f9fb;
+  display: grid;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+
+#reddit-content-filter-ai-overlay .rcf-ai-reasons:empty {
+  display: none;
+}
+
+#reddit-content-filter-ai-overlay .rcf-ai-reasons li {
+  background: #1d2630;
+  border: 1px solid #384652;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.35;
+  padding: 8px 10px;
+}
+
+#reddit-content-filter-ai-overlay .rcf-ai-actions {
+  display: none;
+  gap: 10px;
+}
+
+#reddit-content-filter-ai-overlay[data-mode="blocked"] .rcf-ai-actions {
+  display: flex;
+}
+
+#reddit-content-filter-ai-overlay .rcf-ai-action {
+  align-items: center;
+  background: #202a33;
+  border: 1px solid #52606c;
+  border-radius: 8px;
+  color: #f7f9fb;
+  cursor: pointer;
+  display: flex;
+  height: 40px;
+  justify-content: center;
+  padding: 0;
+  position: relative;
+  width: 40px;
+}
+
+#reddit-content-filter-ai-overlay .rcf-ai-action:hover {
+  border-color: #ff4500;
+  color: #ff7a45;
+}
+
+#reddit-content-filter-ai-overlay .rcf-ai-back::before {
+  border-bottom: 3px solid currentColor;
+  border-left: 3px solid currentColor;
+  content: "";
+  height: 10px;
+  transform: rotate(45deg);
+  width: 10px;
+}
+
+#reddit-content-filter-ai-overlay .rcf-ai-back::after {
+  background: currentColor;
+  content: "";
+  height: 3px;
+  margin-left: -6px;
+  width: 18px;
+}
+
+#reddit-content-filter-ai-overlay .rcf-ai-home::before {
+  border-left: 11px solid transparent;
+  border-right: 11px solid transparent;
+  border-bottom: 10px solid currentColor;
+  content: "";
+  left: 9px;
+  position: absolute;
+  top: 9px;
+}
+
+#reddit-content-filter-ai-overlay .rcf-ai-home::after {
+  border: 3px solid currentColor;
+  border-top: 0;
+  content: "";
+  height: 12px;
+  position: absolute;
+  top: 19px;
+  width: 16px;
 }
 
 @keyframes rcf-ai-spin {

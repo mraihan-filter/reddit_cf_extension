@@ -28,12 +28,20 @@ const status = document.getElementById("status");
 const navItems = Array.from(document.querySelectorAll(".nav-item"));
 const panels = Array.from(document.querySelectorAll("[data-view-panel]"));
 const settingControls = Array.from(document.querySelectorAll("[data-setting]"));
-const masterToggle = document.getElementById("enabled");
 const apiKeyInput = document.getElementById("openRouterApiKey");
 const modelInput = document.getElementById("openRouterModel");
 const logsList = document.getElementById("logsList");
 const logDetails = document.getElementById("logDetails");
 const logCount = document.getElementById("logCount");
+const CATEGORY_LABELS = {
+  1: "Female name of any locale or nationality",
+  2: "Performative entertainment title or personality",
+  3: "Human sexuality content or product",
+  4: "NSFW content or product",
+  5: "Female apparel",
+  6: "Common human body-part term",
+  7: "Obfuscated fragment"
+};
 
 function setStatus(message) {
   status.textContent = message;
@@ -50,13 +58,7 @@ function switchView(view) {
 }
 
 function getSettingControls(key) {
-  const controls = settingControls.filter((control) => control.dataset.setting === key);
-
-  if (key === "enabled") {
-    controls.push(masterToggle);
-  }
-
-  return controls;
+  return settingControls.filter((control) => control.dataset.setting === key);
 }
 
 function renderSettings(settings) {
@@ -233,7 +235,7 @@ function renderSelectedLog(log) {
     detailCard("Cost", formatCost(log.cost), log.responseId ? `Response ID: ${log.responseId}` : ""),
     detailCard("Model", log.model || "Not recorded", log.provider ? `Provider: ${log.provider}` : ""),
     detailCard("Cache status", log.cacheStatus || "Not recorded", formatDate(log.timestamp)),
-    detailCard("Matches", formatMatches(log), "Matched prompt category numbers.", true),
+    detailCard("Matches", formatMatches(log), "Matched prompt categories.", true),
     detailCard("Raw AI output", log.rawOutput || "Not recorded", "", true),
     detailCard("Search query", log.normalizedQuery || log.query || "Not recorded", log.query && log.query !== log.normalizedQuery ? `Original: ${log.query}` : "", true)
   ];
@@ -250,7 +252,9 @@ function formatMatches(log) {
     return "No match details recorded.";
   }
 
-  return log.categories.join(", ");
+  return log.categories
+    .map((category) => CATEGORY_LABELS[category] || `Category ${category}`)
+    .join("\n");
 }
 
 function detailCard(label, value, hint, wide = false) {
@@ -332,9 +336,9 @@ async function init() {
     item.addEventListener("click", () => switchView(item.dataset.view));
   }
 
-  for (const control of [...settingControls, masterToggle]) {
+  for (const control of settingControls) {
     control.addEventListener("change", async () => {
-      const key = control.dataset.setting || "enabled";
+      const key = control.dataset.setting;
       const settings = readSettingsFromControls(key, control.checked);
       renderSettings(settings);
       await saveSettings(settings);

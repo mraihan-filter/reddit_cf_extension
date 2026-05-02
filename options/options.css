@@ -92,27 +92,10 @@ small,
 }
 
 .content {
-  display: flex;
-  flex-direction: column;
   min-width: 0;
   padding: 32px 14px 56px 22px;
 }
 
-.master-toggle {
-  align-items: center;
-  align-self: flex-end;
-  background: #121820;
-  border: 1px solid #8c3a20;
-  border-radius: 8px;
-  display: flex;
-  gap: 18px;
-  justify-content: space-between;
-  margin-bottom: 26px;
-  min-width: 330px;
-  padding: 14px;
-}
-
-.master-toggle strong,
 .toggle-row strong,
 .field-card strong {
   display: block;
@@ -120,7 +103,6 @@ small,
   line-height: 1.35;
 }
 
-.master-toggle small,
 .toggle-row small,
 .field-card small {
   display: block;
@@ -419,12 +401,6 @@ input[type="checkbox"]:disabled {
   .sidebar {
     border-bottom: 1px solid #2d3740;
     border-right: 0;
-  }
-
-  .master-toggle {
-    margin-bottom: 24px;
-    min-width: 0;
-    position: static;
   }
 
   .content {
