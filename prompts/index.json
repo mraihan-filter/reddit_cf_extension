@@ -1,0 +1,7 @@
+[
+  {
+    "label": "Search review default",
+    "path": "prompts/search-review-default.md",
+    "description": "Current Reddit search review prompt."
+  }
+]

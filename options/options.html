@@ -22,6 +22,7 @@
           <button class="nav-item" type="button" data-view="urlBlocking">URL Blocking</button>
           <button class="nav-item" type="button" data-view="cleanup">Reddit Cleanup</button>
           <button class="nav-item" type="button" data-view="aiGate">AI Gate</button>
+          <button class="nav-item" type="button" data-view="aiLab">AI Lab</button>
           <button class="nav-item" type="button" data-view="logs">Runtime Logs</button>
         </nav>
       </aside>
@@ -130,6 +131,67 @@
               <small>Example: google/gemini-2.5-flash-lite</small>
               <input id="openRouterModel" autocomplete="off" spellcheck="false" type="text">
             </label>
+          </div>
+        </section>
+
+        <section class="view" data-view-panel="aiLab">
+          <p class="eyebrow">Experiment</p>
+          <h2>AI Lab</h2>
+          <h3>Prompt and model workbench</h3>
+          <p class="section-copy">Run bundled prompts against OpenRouter models without touching the live Reddit scanner.</p>
+
+          <div class="lab-layout">
+            <div class="lab-workbench">
+              <div class="field-card">
+                <strong>Model library</strong>
+                <small>Add models here, then choose one to test.</small>
+                <div class="inline-controls">
+                  <input id="aiLabModelInput" autocomplete="off" spellcheck="false" type="text" placeholder="provider/model-name">
+                  <button id="aiLabAddModel" type="button">Add</button>
+                </div>
+                <div class="inline-controls">
+                  <select id="aiLabModelSelect"></select>
+                  <button id="aiLabRemoveModel" type="button">Remove</button>
+                </div>
+              </div>
+
+              <div class="field-card">
+                <strong>Prompt</strong>
+                <small>Loaded from the extension prompts folder registry.</small>
+                <select id="aiLabPromptSelect"></select>
+                <small id="aiLabPromptDescription"></small>
+              </div>
+
+              <label class="field-card lab-input-card">
+                <strong>User input</strong>
+                <small>Use a search query or any experimental input.</small>
+                <textarea id="aiLabUserInput" spellcheck="false" rows="7"></textarea>
+              </label>
+
+              <div class="lab-actions">
+                <button id="aiLabRun" type="button">Run lab request</button>
+                <button id="aiLabClearLogs" type="button">Clear lab logs</button>
+              </div>
+
+              <div class="field-card">
+                <strong>Latest output</strong>
+                <pre id="aiLabOutput">No lab run yet.</pre>
+              </div>
+            </div>
+
+            <div class="lab-logs">
+              <div class="logs-header compact">
+                <div>
+                  <p class="eyebrow">AI Lab Logs</p>
+                  <h3>Experimental runs</h3>
+                </div>
+                <span id="aiLabLogCount" class="count-pill">0</span>
+              </div>
+              <div class="logs-layout lab-logs-layout">
+                <div id="aiLabLogsList" class="logs-list" aria-label="AI Lab logs"></div>
+                <div id="aiLabLogDetails" class="detail-grid"></div>
+              </div>
+            </div>
           </div>
         </section>
 
