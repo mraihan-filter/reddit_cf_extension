@@ -15,18 +15,20 @@
 }
 
 #reddit-content-filter-ai-overlay .rcf-ai-card {
-  align-items: center;
-  background: #141a20;
-  border: 1px solid #52606c;
+  align-items: stretch;
+  background: linear-gradient(180deg, #151c23 0%, #11171d 100%);
+  border: 1px solid #3d4a55;
   border-radius: 8px;
   box-sizing: border-box;
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.03);
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  max-width: 560px;
-  min-width: min(520px, calc(100vw - 48px));
-  padding: 26px 34px;
-  text-align: center;
+  gap: 0;
+  max-width: 620px;
+  min-width: min(580px, calc(100vw - 48px));
+  overflow: hidden;
+  padding: 0;
+  text-align: left;
 }
 
 #reddit-content-filter-ai-overlay .rcf-ai-spinner {
@@ -40,33 +42,105 @@
 
 #reddit-content-filter-ai-overlay[data-mode="blocked"] .rcf-ai-spinner {
   animation: none;
-  border-color: #ff4500;
-  height: 18px;
-  width: 18px;
+  background: #ff4500;
+  border: 0;
+  border-radius: 999px;
+  box-shadow: 0 0 0 6px rgba(255, 69, 0, 0.16);
+  height: 10px;
+  margin: 4px 2px 0 0;
+  width: 10px;
 }
 
 #reddit-content-filter-ai-overlay .rcf-ai-title {
   display: block;
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1.3;
 }
 
 #reddit-content-filter-ai-overlay .rcf-ai-copy {
-  color: #b8c2cc;
+  color: #aebbc7;
   display: block;
   font-size: 13px;
   line-height: 1.4;
 }
 
+#reddit-content-filter-ai-overlay .rcf-ai-spinner,
+#reddit-content-filter-ai-overlay .rcf-ai-title,
+#reddit-content-filter-ai-overlay .rcf-ai-copy {
+  margin-left: 28px;
+  margin-right: 28px;
+}
+
+#reddit-content-filter-ai-overlay .rcf-ai-spinner {
+  margin-top: 28px;
+}
+
+#reddit-content-filter-ai-overlay .rcf-ai-title {
+  margin-top: 18px;
+}
+
+#reddit-content-filter-ai-overlay[data-mode="loading"] .rcf-ai-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "signal title"
+    "signal copy";
+  padding: 28px;
+}
+
+#reddit-content-filter-ai-overlay[data-mode="loading"] .rcf-ai-spinner {
+  grid-area: signal;
+  margin: 0 20px 0 0;
+}
+
+#reddit-content-filter-ai-overlay[data-mode="loading"] .rcf-ai-title {
+  align-self: end;
+  grid-area: title;
+  margin: 0 0 2px;
+}
+
+#reddit-content-filter-ai-overlay[data-mode="loading"] .rcf-ai-copy {
+  align-self: start;
+  grid-area: copy;
+  margin: 0;
+}
+
+#reddit-content-filter-ai-overlay[data-mode="blocked"] .rcf-ai-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "signal title"
+    "signal copy"
+    "reasons reasons"
+    "actions actions";
+  padding-top: 28px;
+}
+
+#reddit-content-filter-ai-overlay[data-mode="blocked"] .rcf-ai-spinner {
+  grid-area: signal;
+  margin-left: 28px;
+}
+
+#reddit-content-filter-ai-overlay[data-mode="blocked"] .rcf-ai-title {
+  grid-area: title;
+  margin: 0 28px 4px 12px;
+}
+
+#reddit-content-filter-ai-overlay[data-mode="blocked"] .rcf-ai-copy {
+  grid-area: copy;
+  margin: 0 28px 0 12px;
+}
+
 #reddit-content-filter-ai-overlay .rcf-ai-reasons {
   color: #f7f9fb;
   display: grid;
-  gap: 6px;
+  gap: 8px;
+  grid-area: reasons;
   list-style: none;
-  margin: 0;
-  padding: 0;
+  margin: 24px 28px 0;
+  padding: 18px 0 0;
+  border-top: 1px solid #2f3a44;
   text-align: left;
-  width: 100%;
 }
 
 #reddit-content-filter-ai-overlay .rcf-ai-reasons:empty {
@@ -74,17 +148,24 @@
 }
 
 #reddit-content-filter-ai-overlay .rcf-ai-reasons li {
-  background: #1d2630;
-  border: 1px solid #384652;
+  background: #1a232c;
+  border: 1px solid #33424f;
   border-radius: 6px;
-  font-size: 12px;
+  color: #e8eef4;
+  font-size: 13px;
+  font-weight: 700;
   line-height: 1.35;
-  padding: 8px 10px;
+  padding: 10px 12px;
 }
 
 #reddit-content-filter-ai-overlay .rcf-ai-actions {
   display: none;
-  gap: 10px;
+  gap: 16px;
+  grid-area: actions;
+  justify-content: flex-end;
+  margin: 24px 28px 0;
+  padding: 16px 0 24px;
+  border-top: 1px solid #2f3a44;
 }
 
 #reddit-content-filter-ai-overlay[data-mode="blocked"] .rcf-ai-actions {
@@ -95,7 +176,8 @@
   align-items: center;
   background: transparent;
   border: 0;
-  color: #f7f9fb;
+  border-radius: 6px;
+  color: #dce5ed;
   cursor: pointer;
   display: flex;
   height: 40px;
