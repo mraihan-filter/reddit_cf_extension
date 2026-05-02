@@ -52,7 +52,7 @@ const logCount = document.getElementById("logCount");
 const aiLabModelInput = document.getElementById("aiLabModelInput");
 const aiLabModelSelect = document.getElementById("aiLabModelSelect");
 const aiLabAddModel = document.getElementById("aiLabAddModel");
-const aiLabRemoveModel = document.getElementById("aiLabRemoveModel");
+const aiLabModelTags = document.getElementById("aiLabModelTags");
 const aiLabPromptSelect = document.getElementById("aiLabPromptSelect");
 const aiLabPromptDescription = document.getElementById("aiLabPromptDescription");
 const aiLabUserInput = document.getElementById("aiLabUserInput");
@@ -146,7 +146,34 @@ function renderAiLabSettings(settings) {
 
   aiLabModelSelect.value = aiLabSettings.selectedModel;
   aiLabUserInput.value = aiLabSettings.userInput || "";
+  renderAiLabModelTags();
   renderAiLabPrompts();
+}
+
+function renderAiLabModelTags() {
+  aiLabModelTags.textContent = "";
+
+  for (const model of aiLabSettings.models) {
+    const tag = document.createElement("span");
+    tag.className = `model-tag${model === aiLabSettings.selectedModel ? " active" : ""}`;
+    tag.innerHTML = `
+      <span>${escapeHtml(model)}</span>
+      <button type="button" aria-label="Remove ${escapeHtml(model)}" title="Remove model">×</button>
+    `;
+    tag.querySelector("button").addEventListener("click", async () => {
+      const models = aiLabSettings.models.filter((entry) => entry !== model);
+      const fallbackModels = models.length ? models : [...DEFAULT_AI_LAB_SETTINGS.models];
+      const selectedModel = model === aiLabSettings.selectedModel ? fallbackModels[0] : aiLabSettings.selectedModel;
+
+      await saveAiLabSettings({
+        models: fallbackModels,
+        selectedModel
+      });
+      renderAiLabSettings(aiLabSettings);
+      setStatus("AI Lab model removed");
+    });
+    aiLabModelTags.append(tag);
+  }
 }
 
 function renderAiLabPrompts() {
@@ -361,7 +388,9 @@ function renderAiLabCurrentRun(log) {
     detailCard("Status", log.error ? "Error" : "Run complete", ""),
     detailCard("Latency", formatLatency(log.latencyMs), ""),
     detailCard("Model", log.model || "Not recorded", ""),
-    detailCard("Tokens", summarizeUsage(log.usage), "")
+    detailCard("Tokens", summarizeUsage(log.usage), ""),
+    detailCard("Cost", formatCost(log.cost), ""),
+    detailCard("Timestamp", formatDate(log.timestamp), "")
   );
 }
 
@@ -685,18 +714,9 @@ async function init() {
     renderAiLabSettings(aiLabSettings);
     setStatus("AI Lab model added");
   });
-  aiLabRemoveModel.addEventListener("click", async () => {
-    const model = aiLabModelSelect.value;
-    const models = aiLabSettings.models.filter((entry) => entry !== model);
-    await saveAiLabSettings({
-      models: models.length ? models : [...DEFAULT_AI_LAB_SETTINGS.models],
-      selectedModel: models[0] || DEFAULT_AI_LAB_SETTINGS.selectedModel
-    });
-    renderAiLabSettings(aiLabSettings);
-    setStatus("AI Lab model removed");
-  });
   aiLabModelSelect.addEventListener("change", async () => {
     await saveAiLabSettings({ selectedModel: aiLabModelSelect.value });
+    renderAiLabModelTags();
   });
   aiLabPromptSelect.addEventListener("change", async () => {
     updateAiLabPromptDescription();

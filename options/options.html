@@ -167,15 +167,15 @@
             <div class="lab-config-panel">
               <div class="field-card">
                 <strong>Model library</strong>
-                <small>Add models here, then choose one to test.</small>
+                <small>Add models here, then choose one from the dropdown to test.</small>
                 <div class="inline-controls">
                   <input id="aiLabModelInput" autocomplete="off" spellcheck="false" type="text" placeholder="provider/model-name">
                   <button id="aiLabAddModel" type="button">Add</button>
                 </div>
                 <div class="inline-controls">
                   <select id="aiLabModelSelect"></select>
-                  <button id="aiLabRemoveModel" type="button">Remove</button>
                 </div>
+                <div id="aiLabModelTags" class="model-tags" aria-label="Saved AI Lab models"></div>
               </div>
 
               <div class="field-card">

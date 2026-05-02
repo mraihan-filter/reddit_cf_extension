@@ -266,6 +266,10 @@ input[type="checkbox"]:disabled {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+.inline-controls:has(select:only-child) {
+  grid-template-columns: 1fr;
+}
+
 .inline-controls button,
 .lab-actions button {
   background: #17212a;
@@ -340,8 +344,62 @@ input[type="checkbox"]:disabled {
 }
 
 .lab-current-details {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-top: 0;
+}
+
+.model-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.model-tag {
+  align-items: center;
+  background: #101820;
+  border: 1px solid #34414c;
+  border-radius: 8px;
+  color: #f7f9fb;
+  display: inline-flex;
+  gap: 8px;
+  max-width: 100%;
+  min-height: 32px;
+  padding: 0 8px 0 12px;
+}
+
+.model-tag.active {
+  border-color: #ff6040;
+  box-shadow: inset 0 0 0 1px rgba(255, 96, 64, 0.18);
+}
+
+.model-tag span {
+  font-size: 12px;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-tag button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: #a9bac7;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 18px;
+  height: 24px;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  width: 24px;
+}
+
+.model-tag button:hover {
+  background: #24303a;
+  color: #ff7a45;
 }
 
 .lab-runtime-section {
