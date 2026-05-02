@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Personal Reddit Content Filter",
-  "description": "Strictly filters adult content from Reddit pages.",
+  "description": "Personal Reddit page element filter.",
   "version": "0.1.0",
   "permissions": ["storage"],
   "content_scripts": [

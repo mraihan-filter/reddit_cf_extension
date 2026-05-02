@@ -16,7 +16,13 @@ Run end-to-end tests:
 npm run test:e2e
 ```
 
-The extension source lives in `src/`. E2E tests live in `tests/e2e/` and load the unpacked extension into Chromium with Playwright.
+Load this repository folder directly in Chrome:
+
+```text
+D:\My Folder\Development\Reddit Content Filter Extension
+```
+
+The extension files are `manifest.json` and `filter.js`. E2E tests live in `tests/e2e/` and load the unpacked extension into Chromium with Playwright.
 
 ## Version Control
 

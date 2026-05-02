@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { readFile } from "node:fs/promises";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const extensionPath = path.resolve(__dirname, "../../src");
+const extensionPath = path.resolve(__dirname, "../..");
 const fixturePath = path.resolve(__dirname, "../fixtures/reddit-feed.html");
 
 async function openRedditFixture(testInfo, url = "https://www.reddit.com/") {
