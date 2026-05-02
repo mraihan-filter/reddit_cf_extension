@@ -16,6 +16,14 @@ Run end-to-end tests:
 npm run test:e2e
 ```
 
+Run live Reddit smoke tests with a dedicated browser profile:
+
+```powershell
+npm run test:live
+```
+
+The first live run opens an extension-capable Chromium browser with `.profiles/reddit-live`. Log into Reddit there once, close the browser, then run `npm run test:live` again.
+
 Load this repository folder directly in Chrome:
 
 ```text
