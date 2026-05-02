@@ -141,7 +141,30 @@
           <p class="section-copy">Run bundled prompts against OpenRouter models without touching the live Reddit scanner.</p>
 
           <div class="lab-layout">
-            <div class="lab-workbench">
+            <div class="field-card lab-run-panel">
+              <div class="lab-card-header">
+                <div>
+                  <p class="eyebrow">Playground</p>
+                  <strong>Single-query test run</strong>
+                  <small>Run one input against the selected prompt and model.</small>
+                </div>
+                <button id="aiLabRun" type="button">Run test</button>
+              </div>
+
+              <label class="lab-input-card">
+                <strong>User input</strong>
+                <textarea id="aiLabUserInput" spellcheck="false" rows="6"></textarea>
+              </label>
+
+              <div id="aiLabCurrentDetails" class="detail-grid lab-current-details"></div>
+
+              <div>
+                <strong>Latest output</strong>
+                <pre id="aiLabOutput">No lab run yet.</pre>
+              </div>
+            </div>
+
+            <div class="lab-config-panel">
               <div class="field-card">
                 <strong>Model library</strong>
                 <small>Add models here, then choose one to test.</small>
@@ -161,34 +184,25 @@
                 <select id="aiLabPromptSelect"></select>
                 <small id="aiLabPromptDescription"></small>
               </div>
+            </div>
+          </div>
 
-              <label class="field-card lab-input-card">
-                <strong>User input</strong>
-                <small>Use a search query or any experimental input.</small>
-                <textarea id="aiLabUserInput" spellcheck="false" rows="7"></textarea>
-              </label>
-
-              <div class="lab-actions">
-                <button id="aiLabRun" type="button">Run lab request</button>
+          <div class="lab-runtime-section">
+            <div class="logs-header">
+              <div>
+                <p class="eyebrow">AI Lab Runtime Logs</p>
+                <h3>Experimental runs</h3>
+              </div>
+              <div class="log-actions">
+                <span id="aiLabLogCount" class="count-pill">0</span>
                 <button id="aiLabClearLogs" type="button">Clear lab logs</button>
               </div>
-
-              <div class="field-card">
-                <strong>Latest output</strong>
-                <pre id="aiLabOutput">No lab run yet.</pre>
-              </div>
             </div>
-
-            <div class="lab-logs">
-              <div class="logs-header compact">
-                <div>
-                  <p class="eyebrow">AI Lab Logs</p>
-                  <h3>Experimental runs</h3>
-                </div>
-                <span id="aiLabLogCount" class="count-pill">0</span>
-              </div>
-              <div class="logs-layout lab-logs-layout">
-                <div id="aiLabLogsList" class="logs-list" aria-label="AI Lab logs"></div>
+            <div class="logs-layout lab-logs-layout">
+              <div id="aiLabLogsList" class="logs-list" aria-label="AI Lab logs"></div>
+              <div class="log-inspector">
+                <p class="eyebrow">Inspector</p>
+                <h3>Selected lab run</h3>
                 <div id="aiLabLogDetails" class="detail-grid"></div>
               </div>
             </div>

@@ -59,6 +59,7 @@ const aiLabUserInput = document.getElementById("aiLabUserInput");
 const aiLabRun = document.getElementById("aiLabRun");
 const aiLabClearLogs = document.getElementById("aiLabClearLogs");
 const aiLabOutput = document.getElementById("aiLabOutput");
+const aiLabCurrentDetails = document.getElementById("aiLabCurrentDetails");
 const aiLabLogsList = document.getElementById("aiLabLogsList");
 const aiLabLogDetails = document.getElementById("aiLabLogDetails");
 const aiLabLogCount = document.getElementById("aiLabLogCount");
@@ -348,6 +349,22 @@ function renderAiLabLogs() {
   renderSelectedAiLabLog(aiLabLogs.find((log) => log.id === selectedAiLabLogId));
 }
 
+function renderAiLabCurrentRun(log) {
+  aiLabCurrentDetails.textContent = "";
+
+  if (!log) {
+    aiLabCurrentDetails.append(detailCard("Decision", "No lab run yet", "", false));
+    return;
+  }
+
+  aiLabCurrentDetails.append(
+    detailCard("Status", log.error ? "Error" : "Run complete", ""),
+    detailCard("Latency", formatLatency(log.latencyMs), ""),
+    detailCard("Model", log.model || "Not recorded", ""),
+    detailCard("Tokens", summarizeUsage(log.usage), "")
+  );
+}
+
 function renderSelectedAiLabLog(log) {
   aiLabLogDetails.textContent = "";
 
@@ -478,6 +495,7 @@ async function appendAiLabLog(log) {
   aiLabLogs = aiLabLogs.slice(0, MAX_AI_LAB_LOGS);
   await chrome.storage.local.set({ [AI_LAB_LOGS_KEY]: aiLabLogs });
   selectedAiLabLogId = aiLabLogs[0]?.id || "";
+  renderAiLabCurrentRun(log);
   renderAiLabLogs();
 }
 
@@ -632,6 +650,10 @@ async function init() {
   aiLabLogs = Array.isArray(localResult[AI_LAB_LOGS_KEY]) ? localResult[AI_LAB_LOGS_KEY] : [];
   renderLogs();
   renderAiLabLogs();
+  renderAiLabCurrentRun(aiLabLogs[0]);
+  if (aiLabLogs[0]) {
+    aiLabOutput.textContent = aiLabLogs[0].rawOutput || aiLabLogs[0].error || "No output recorded.";
+  }
 
   for (const item of navItems) {
     item.addEventListener("click", () => switchView(item.dataset.view));
