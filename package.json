@@ -3,15 +3,5 @@
   "version": "0.1.0",
   "private": true,
   "description": "Personal browser extension for strict filtering of adult Reddit content.",
-  "type": "module",
-  "scripts": {
-    "test:e2e": "playwright test --project=fixture",
-    "test:e2e:headed": "playwright test --project=fixture --headed",
-    "test:e2e:ui": "playwright test --project=fixture --ui",
-    "test:live": "playwright test --project=live",
-    "test:all": "playwright test"
-  },
-  "devDependencies": {
-    "@playwright/test": "^1.53.0"
-  }
+  "type": "module"
 }
