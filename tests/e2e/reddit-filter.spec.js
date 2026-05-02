@@ -106,7 +106,9 @@ test.describe("Reddit content filter extension", () => {
 
     try {
       await expect(page.getByTestId("search-communities-section")).toBeHidden();
+      await expect(page.getByTestId("search-community-result")).toBeHidden();
       await expect(page.getByTestId("search-profiles-section")).toBeHidden();
+      await expect(page.getByTestId("search-profile-result")).toBeHidden();
     } finally {
       await context.close();
     }
@@ -151,7 +153,9 @@ test.describe("Reddit content filter extension", () => {
       await expect(page.getByTestId("left-recent-section")).toBeHidden();
       await expect(page.getByTestId("homepage-content")).toBeVisible();
       await expect(page.getByTestId("search-communities-section")).toBeVisible();
+      await expect(page.getByTestId("search-community-result")).toBeVisible();
       await expect(page.getByTestId("search-profiles-section")).toBeVisible();
+      await expect(page.getByTestId("search-profile-result")).toBeVisible();
     } finally {
       await context.close();
     }

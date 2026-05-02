@@ -9,6 +9,8 @@ const HOMEPAGE_CONTENT_SELECTOR = ".main-container";
 const HOMEPAGE_CONTENT_READY_SELECTOR = `${HOMEPAGE_CONTENT_SELECTOR}:has(#main-content, #right-sidebar-container)`;
 const SEARCH_COMMUNITIES_SELECTOR = "#subreddit_typeahead_section";
 const SEARCH_PROFILES_SELECTOR = "#profile_typeahead_section";
+const SEARCH_COMMUNITY_ITEMS_SELECTOR = 'search-telemetry-tracker[data-type="search-dropdown-item"][data-faceplate-tracking-context*="\\"type\\":\\"subreddit\\""]';
+const SEARCH_PROFILE_ITEMS_SELECTOR = 'search-telemetry-tracker[data-type="search-dropdown-item"][data-faceplate-tracking-context*="\\"type\\":\\"profile\\""]';
 const DEFAULT_SETTINGS = {
   enabled: true,
   hideGamesOnReddit: true,
@@ -157,23 +159,25 @@ function hideSearchDropdownSections() {
   let hiddenCount = 0;
 
   if (currentSettings.hideSearchCommunities) {
-    for (const element of queryDeepAll(SEARCH_COMMUNITIES_SELECTOR)) {
+    for (const element of queryDeepAll(`${SEARCH_COMMUNITIES_SELECTOR}, ${SEARCH_COMMUNITY_ITEMS_SELECTOR}`)) {
       if (hideElement(element)) {
         hiddenCount += 1;
       }
     }
   } else {
     showElements(SEARCH_COMMUNITIES_SELECTOR);
+    showElements(SEARCH_COMMUNITY_ITEMS_SELECTOR);
   }
 
   if (currentSettings.hideSearchProfiles) {
-    for (const element of queryDeepAll(SEARCH_PROFILES_SELECTOR)) {
+    for (const element of queryDeepAll(`${SEARCH_PROFILES_SELECTOR}, ${SEARCH_PROFILE_ITEMS_SELECTOR}`)) {
       if (hideElement(element)) {
         hiddenCount += 1;
       }
     }
   } else {
     showElements(SEARCH_PROFILES_SELECTOR);
+    showElements(SEARCH_PROFILE_ITEMS_SELECTOR);
   }
 
   return hiddenCount;

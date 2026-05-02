@@ -53,17 +53,27 @@
       searchRoot.innerHTML = `
         <div id="search-dropdown-results-container">
           <ul id="reddit-typeahead-results-partial-container">
-            <div id="subreddit_typeahead_section" data-testid="search-communities-section">
-              <div>Communities</div>
-              <search-telemetry-tracker data-type="search-dropdown-item">r/Raihan_Khan</search-telemetry-tracker>
-              <search-telemetry-tracker data-type="search-dropdown-item">r/DawgCult</search-telemetry-tracker>
-            </div>
+            <div id="subreddit_typeahead_section" data-testid="search-communities-section">Communities</div>
+            <search-telemetry-tracker
+              data-testid="search-community-result"
+              data-type="search-dropdown-item"
+              data-faceplate-tracking-context='{"action_info":{"type":"subreddit"},"subreddit":{"name":"Raihan_Khan"}}'
+            >r/Raihan_Khan</search-telemetry-tracker>
+            <search-telemetry-tracker
+              data-type="search-dropdown-item"
+              data-faceplate-tracking-context='{"action_info":{"type":"subreddit"},"subreddit":{"name":"DawgCult"}}'
+            >r/DawgCult</search-telemetry-tracker>
 
-            <div id="profile_typeahead_section" data-testid="search-profiles-section">
-              <div>Profiles</div>
-              <search-telemetry-tracker data-type="search-dropdown-item">u/aydinraihan</search-telemetry-tracker>
-              <search-telemetry-tracker data-type="search-dropdown-item">u/bungiri</search-telemetry-tracker>
-            </div>
+            <div id="profile_typeahead_section" data-testid="search-profiles-section">Profiles</div>
+            <search-telemetry-tracker
+              data-testid="search-profile-result"
+              data-type="search-dropdown-item"
+              data-faceplate-tracking-context='{"action_info":{"type":"profile"},"profile":{"name":"aydinraihan"}}'
+            >u/aydinraihan</search-telemetry-tracker>
+            <search-telemetry-tracker
+              data-type="search-dropdown-item"
+              data-faceplate-tracking-context='{"action_info":{"type":"profile"},"profile":{"name":"bungiri"}}'
+            >u/bungiri</search-telemetry-tracker>
           </ul>
         </div>
       `;
