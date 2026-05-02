@@ -298,8 +298,16 @@ function ensureAiOverlay(mode, text, categories = []) {
         <span class="rcf-ai-copy"></span>
         <ul class="rcf-ai-reasons"></ul>
         <div class="rcf-ai-actions">
-          <button class="rcf-ai-action rcf-ai-back" type="button" data-rcf-action="back" aria-label="Go back" title="Go back"></button>
-          <button class="rcf-ai-action rcf-ai-home" type="button" data-rcf-action="home" aria-label="Go home" title="Go home"></button>
+          <button class="rcf-ai-action" type="button" data-rcf-action="back" aria-label="Go back" title="Go back">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M10.5 4.5 3 12l7.5 7.5v-5H15c2.8 0 5 2.2 5 5V21h2v-1.5c0-3.9-3.1-7-7-7h-4.5v-5Z"></path>
+            </svg>
+          </button>
+          <button class="rcf-ai-action" type="button" data-rcf-action="home" aria-label="Go home" title="Go home">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M3 10.6 12 3l9 7.6v9.9c0 .8-.7 1.5-1.5 1.5h-5v-6.2h-5V22h-5C3.7 22 3 21.3 3 20.5v-9.9Zm18.7-1.2-1.4 1.7L12 4.1 3.7 11.1 2.3 9.4 12 1.3l9.7 8.1Z"></path>
+            </svg>
+          </button>
         </div>
       </div>
     `;

@@ -101,7 +101,6 @@
   height: 40px;
   justify-content: center;
   padding: 0;
-  position: relative;
   width: 40px;
 }
 
@@ -110,41 +109,11 @@
   color: #ff7a45;
 }
 
-#reddit-content-filter-ai-overlay .rcf-ai-back::before {
-  border-bottom: 3px solid currentColor;
-  border-left: 3px solid currentColor;
-  content: "";
-  height: 10px;
-  transform: rotate(45deg);
-  width: 10px;
-}
-
-#reddit-content-filter-ai-overlay .rcf-ai-back::after {
-  background: currentColor;
-  content: "";
-  height: 3px;
-  margin-left: -6px;
-  width: 18px;
-}
-
-#reddit-content-filter-ai-overlay .rcf-ai-home::before {
-  border-left: 11px solid transparent;
-  border-right: 11px solid transparent;
-  border-bottom: 10px solid currentColor;
-  content: "";
-  left: 9px;
-  position: absolute;
-  top: 9px;
-}
-
-#reddit-content-filter-ai-overlay .rcf-ai-home::after {
-  border: 3px solid currentColor;
-  border-top: 0;
-  content: "";
-  height: 12px;
-  position: absolute;
-  top: 19px;
-  width: 16px;
+#reddit-content-filter-ai-overlay .rcf-ai-action svg {
+  display: block;
+  fill: currentColor;
+  height: 24px;
+  width: 24px;
 }
 
 @keyframes rcf-ai-spin {
