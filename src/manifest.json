@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Personal Reddit Content Filter",
+  "description": "Strictly filters adult content from Reddit pages.",
+  "version": "0.1.0",
+  "permissions": ["storage"],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.reddit.com/*",
+        "*://reddit.com/*",
+        "*://*.redd.it/*"
+      ],
+      "js": ["filter.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_title": "Reddit Content Filter"
+  }
+}
