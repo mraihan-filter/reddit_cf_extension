@@ -299,13 +299,14 @@ function ensureAiOverlay(mode, text, categories = []) {
         <ul class="rcf-ai-reasons"></ul>
         <div class="rcf-ai-actions">
           <button class="rcf-ai-action" type="button" data-rcf-action="back" aria-label="Go back" title="Go back">
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path d="M10.5 4.5 3 12l7.5 7.5v-5H15c2.8 0 5 2.2 5 5V21h2v-1.5c0-3.9-3.1-7-7-7h-4.5v-5Z"></path>
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.793 19.793a.707.707 0 0 0 1.207-.5V16a1 1 0 0 1 1-1h6a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1h-6a1 1 0 0 1-1-1V4.707a.707.707 0 0 0-1.207-.5l-6.94 6.94a1.207 1.207 0 0 0 0 1.707z"></path>
             </svg>
           </button>
           <button class="rcf-ai-action" type="button" data-rcf-action="home" aria-label="Go home" title="Go home">
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path d="M3 10.6 12 3l9 7.6v9.9c0 .8-.7 1.5-1.5 1.5h-5v-6.2h-5V22h-5C3.7 22 3 21.3 3 20.5v-9.9Zm18.7-1.2-1.4 1.7L12 4.1 3.7 11.1 2.3 9.4 12 1.3l9.7 8.1Z"></path>
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"></path>
+              <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
             </svg>
           </button>
         </div>
