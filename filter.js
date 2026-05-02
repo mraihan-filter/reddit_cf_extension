@@ -12,6 +12,7 @@ const SEARCH_PROFILES_SELECTOR = "#profile_typeahead_section";
 const SEARCH_COMMUNITY_ITEMS_SELECTOR = 'search-telemetry-tracker[data-type="search-dropdown-item"][data-faceplate-tracking-context*="\\"type\\":\\"subreddit\\""]';
 const SEARCH_PROFILE_ITEMS_SELECTOR = 'search-telemetry-tracker[data-type="search-dropdown-item"][data-faceplate-tracking-context*="\\"type\\":\\"profile\\""]';
 const BLOCKED_COMMUNITY_OVER_18_SELECTOR = 'faceplate-tracker[source="blocked_community_page"][action="click"][noun="browse"], #nsfw-action-button, confirm-over-18';
+const SETTINGS_MATURE_CONTENT_ROW_SELECTOR = 'settings-preferences label[data-testid="is-nsfw-shown"], label[data-testid="is-nsfw-shown"]';
 const DEFAULT_SETTINGS = {
   enabled: true,
   hideGamesOnReddit: true,
@@ -19,7 +20,8 @@ const DEFAULT_SETTINGS = {
   hideHomepageContent: true,
   hideSearchCommunities: true,
   hideSearchProfiles: true,
-  hideBlockedCommunityOver18Button: true
+  hideBlockedCommunityOver18Button: true,
+  hideSettingsMatureContentRow: true
 };
 
 let currentSettings = { ...DEFAULT_SETTINGS };
@@ -202,6 +204,23 @@ function hideBlockedCommunityModalActions() {
   return 0;
 }
 
+function hideSettingsRows() {
+  if (currentSettings.hideSettingsMatureContentRow) {
+    let hiddenCount = 0;
+
+    for (const element of queryDeepAll(SETTINGS_MATURE_CONTENT_ROW_SELECTOR)) {
+      if (hideElement(element)) {
+        hiddenCount += 1;
+      }
+    }
+
+    return hiddenCount;
+  }
+
+  showElements(SETTINGS_MATURE_CONTENT_ROW_SELECTOR);
+  return 0;
+}
+
 function filterDocument() {
   if (!currentSettings.enabled) {
     removePrefilterStyle();
@@ -211,7 +230,7 @@ function filterDocument() {
 
   observeShadowRoots();
 
-  return hideAlwaysBlockedSections() + hideHomepageContent() + hideSearchDropdownSections() + hideBlockedCommunityModalActions();
+  return hideAlwaysBlockedSections() + hideHomepageContent() + hideSearchDropdownSections() + hideBlockedCommunityModalActions() + hideSettingsRows();
 }
 
 function reconcileRoute() {

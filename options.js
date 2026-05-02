@@ -6,7 +6,8 @@ const DEFAULT_SETTINGS = {
   hideHomepageContent: true,
   hideSearchCommunities: true,
   hideSearchProfiles: true,
-  hideBlockedCommunityOver18Button: true
+  hideBlockedCommunityOver18Button: true,
+  hideSettingsMatureContentRow: true
 };
 
 const controls = Object.fromEntries(
