@@ -6,9 +6,8 @@ import { readFile } from "node:fs/promises";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const extensionPath = path.resolve(__dirname, "../../src");
 const fixturePath = path.resolve(__dirname, "../fixtures/reddit-feed.html");
-const redditFixtureUrl = "https://www.reddit.com/r/all/";
 
-async function openRedditFixture(testInfo) {
+async function openRedditFixture(testInfo, url = "https://www.reddit.com/") {
   const userDataDir = testInfo.outputPath("user-data");
   const context = await chromium.launchPersistentContext(userDataDir, {
     headless: false,
@@ -27,36 +26,42 @@ async function openRedditFixture(testInfo) {
     });
   });
 
-  await page.goto(redditFixtureUrl);
+  await page.goto(url);
 
   return { context, page };
 }
 
 test.describe("Reddit content filter extension", () => {
-  test("hides adult content while leaving safe posts visible", async ({}, testInfo) => {
+  test("hides homepage feed and right recent posts on the Reddit homepage", async ({}, testInfo) => {
     const { context, page } = await openRedditFixture(testInfo);
 
     try {
-      await expect(page.getByTestId("safe-post")).toBeVisible();
-      await expect(page.getByTestId("nsfw-post")).toBeHidden();
-      await expect(page.getByTestId("adult-keyword-post")).toBeHidden();
+      await expect(page.getByTestId("home-feed")).toBeHidden();
+      await expect(page.getByTestId("right-recent-posts")).toBeHidden();
+      await expect(page.getByTestId("home-nav-section")).toBeVisible();
     } finally {
       await context.close();
     }
   });
 
-  test("filters posts added after initial page load", async ({}, testInfo) => {
-    const { context, page } = await openRedditFixture(testInfo);
+  test("keeps feed and right recent posts visible away from the homepage", async ({}, testInfo) => {
+    const { context, page } = await openRedditFixture(testInfo, "https://www.reddit.com/r/all/");
 
     try {
-      await page.evaluate(() => {
-        const post = document.createElement("article");
-        post.dataset.testid = "dynamic-nsfw-post";
-        post.textContent = "NSFW post added by infinite scroll";
-        document.querySelector("main").append(post);
-      });
+      await expect(page.getByTestId("home-feed")).toBeVisible();
+      await expect(page.getByTestId("right-recent-posts")).toBeVisible();
+    } finally {
+      await context.close();
+    }
+  });
 
-      await expect(page.getByTestId("dynamic-nsfw-post")).toBeHidden();
+  test("always hides left navigation games and recent sections", async ({}, testInfo) => {
+    const { context, page } = await openRedditFixture(testInfo, "https://www.reddit.com/r/all/");
+
+    try {
+      await expect(page.getByTestId("games-on-reddit-section")).toBeHidden();
+      await expect(page.getByTestId("left-recent-section")).toBeHidden();
+      await expect(page.getByTestId("home-nav-section")).toBeVisible();
     } finally {
       await context.close();
     }

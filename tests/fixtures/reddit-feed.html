@@ -2,22 +2,36 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Reddit Feed Fixture</title>
+    <title>Reddit Fixture</title>
   </head>
   <body>
-    <main>
-      <article data-testid="safe-post">
-        <h2>Helpful keyboard shortcuts for productivity</h2>
-        <p>A normal post that should remain visible.</p>
-      </article>
+    <nav aria-label="Primary">
+      <section data-testid="home-nav-section">
+        <h2>Home</h2>
+        <a href="/">Home</a>
+      </section>
 
-      <article data-testid="nsfw-post" data-nsfw="true">
-        <h2>Marked mature community post</h2>
-      </article>
+      <section data-testid="games-on-reddit-section">
+        <h2>Games on Reddit</h2>
+        <a href="/games/bubble-shooter-pro">Bubble Shooter Pro</a>
+        <a href="/games/hot-and-cold">Hot and Cold</a>
+      </section>
 
-      <article data-testid="adult-keyword-post">
-        <h2>NSFW image collection discussion</h2>
+      <section data-testid="left-recent-section">
+        <h2>Recent</h2>
+        <a href="/r/example">r/example</a>
+      </section>
+    </nav>
+
+    <main data-testid="home-feed" data-rcf-region="home-feed">
+      <article>
+        <h2>Homepage feed post</h2>
       </article>
     </main>
+
+    <aside data-testid="right-recent-posts" data-rcf-region="right-recent-posts" aria-label="Recent posts">
+      <h2>Recent posts</h2>
+      <a href="/r/example/comments/1">A recent post</a>
+    </aside>
   </body>
 </html>

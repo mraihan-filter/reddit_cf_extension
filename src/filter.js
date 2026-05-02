@@ -1,113 +1,98 @@
-const DEFAULT_RULES = {
-  enabled: true,
-  blockedTerms: [
-    "18+",
-    "adult",
-    "gonewild",
-    "nsfl",
-    "nsfw",
-    "nude",
-    "onlyfans",
-    "porn",
-    "sex",
-    "sexual"
-  ],
-  blockedSelectors: [
-    '[data-testid="post-container"]',
-    "article",
-    "[slot='post-container']",
-    "shreddit-post",
-    "[data-adclicklocation='title']"
-  ]
-};
-
 const FILTERED_ATTRIBUTE = "data-rcf-filtered";
 
+const ALWAYS_HIDE_SECTION_HEADINGS = ["games on reddit", "recent"];
+const HOME_FEED_SELECTORS = [
+  '[data-rcf-region="home-feed"]',
+  "main",
+  '[role="main"]'
+];
+const RIGHT_RECENT_POSTS_SELECTORS = [
+  '[data-rcf-region="right-recent-posts"]',
+  'aside[aria-label*="recent posts" i]',
+  '[aria-label*="recent posts" i]'
+];
+
 function normalizeText(value) {
-  return String(value || "").toLowerCase();
-}
-
-function containsBlockedTerm(text, rules) {
-  const normalized = normalizeText(text);
-  return rules.blockedTerms.some((term) => normalized.includes(term));
-}
-
-function isExplicitElement(element, rules) {
-  const text = [
-    element.innerText,
-    element.textContent,
-    element.getAttribute("aria-label"),
-    element.getAttribute("data-subreddit-prefixed"),
-    element.getAttribute("subreddit-prefixed"),
-    element.getAttribute("post-title")
-  ].join(" ");
-
-  if (containsBlockedTerm(text, rules)) {
-    return true;
-  }
-
-  if (
-    element.matches(
-      [
-        "[data-nsfw='true']",
-        "[over18='true']",
-        "[data-over18='true']",
-        "[data-testid*='nsfw' i]",
-        "[aria-label*='nsfw' i]",
-        "[aria-label*='not safe for work' i]"
-      ].join(",")
-    )
-  ) {
-    return true;
-  }
-
-  return Boolean(
-    element.querySelector(
-      [
-        "[data-nsfw='true']",
-        "[over18='true']",
-        "[data-over18='true']",
-        "[data-testid*='nsfw' i]",
-        "[aria-label*='nsfw' i]",
-        "[aria-label*='not safe for work' i]"
-      ].join(",")
-    )
-  );
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
 }
 
 function hideElement(element) {
-  if (element.getAttribute(FILTERED_ATTRIBUTE) === "true") {
-    return;
+  if (!element || element.getAttribute(FILTERED_ATTRIBUTE) === "true") {
+    return false;
   }
 
   element.setAttribute(FILTERED_ATTRIBUTE, "true");
   element.style.setProperty("display", "none", "important");
+  return true;
 }
 
-function filterDocument(rules = DEFAULT_RULES) {
-  if (!rules.enabled) {
+function isRedditHomepage() {
+  const host = location.hostname.replace(/^www\./, "");
+  return host === "reddit.com" && location.pathname === "/";
+}
+
+function findSectionContainerFromHeading(heading) {
+  return (
+    heading.closest("section") ||
+    heading.closest("reddit-sidebar-nav-section") ||
+    heading.closest("[data-rcf-section]") ||
+    heading.parentElement
+  );
+}
+
+function hideLeftNavSections() {
+  let hiddenCount = 0;
+
+  document.querySelectorAll("nav h1, nav h2, nav h3, nav h4, nav h5, nav h6, nav summary, nav [aria-label], nav [data-rcf-heading]").forEach((element) => {
+    const label = normalizeText(
+      element.getAttribute("aria-label") ||
+        element.getAttribute("data-rcf-heading") ||
+        element.textContent
+    );
+
+    if (!ALWAYS_HIDE_SECTION_HEADINGS.includes(label)) {
+      return;
+    }
+
+    if (hideElement(findSectionContainerFromHeading(element))) {
+      hiddenCount += 1;
+    }
+  });
+
+  return hiddenCount;
+}
+
+function hideHomepageRegions() {
+  if (!isRedditHomepage()) {
     return 0;
   }
 
-  let filteredCount = 0;
-  const candidates = new Set();
+  let hiddenCount = 0;
 
-  for (const selector of rules.blockedSelectors) {
-    document.querySelectorAll(selector).forEach((element) => candidates.add(element));
-  }
-
-  document.querySelectorAll("[data-nsfw='true'], [over18='true'], [data-over18='true']").forEach((element) => {
-    candidates.add(element.closest(DEFAULT_RULES.blockedSelectors.join(",")) || element);
-  });
-
-  for (const element of candidates) {
-    if (isExplicitElement(element, rules)) {
-      hideElement(element);
-      filteredCount += 1;
+  for (const selector of HOME_FEED_SELECTORS) {
+    const element = document.querySelector(selector);
+    if (element && hideElement(element)) {
+      hiddenCount += 1;
+      break;
     }
   }
 
-  return filteredCount;
+  for (const selector of RIGHT_RECENT_POSTS_SELECTORS) {
+    const element = document.querySelector(selector);
+    if (element && hideElement(element)) {
+      hiddenCount += 1;
+      break;
+    }
+  }
+
+  return hiddenCount;
+}
+
+function filterDocument() {
+  return hideLeftNavSections() + hideHomepageRegions();
 }
 
 function startFiltering() {
