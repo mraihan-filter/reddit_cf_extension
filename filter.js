@@ -11,7 +11,7 @@ const SEARCH_COMMUNITIES_SELECTOR = "#subreddit_typeahead_section";
 const SEARCH_PROFILES_SELECTOR = "#profile_typeahead_section";
 const SEARCH_COMMUNITY_ITEMS_SELECTOR = 'search-telemetry-tracker[data-type="search-dropdown-item"][data-faceplate-tracking-context*="\\"type\\":\\"subreddit\\""]';
 const SEARCH_PROFILE_ITEMS_SELECTOR = 'search-telemetry-tracker[data-type="search-dropdown-item"][data-faceplate-tracking-context*="\\"type\\":\\"profile\\""]';
-const BLOCKED_COMMUNITY_OVER_18_SELECTOR = 'faceplate-tracker[source="blocked_community_page"][action="click"][noun="browse"], #nsfw-action-button';
+const BLOCKED_COMMUNITY_OVER_18_SELECTOR = 'faceplate-tracker[source="blocked_community_page"][action="click"][noun="browse"], #nsfw-action-button, confirm-over-18';
 const DEFAULT_SETTINGS = {
   enabled: true,
   hideGamesOnReddit: true,
