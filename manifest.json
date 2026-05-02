@@ -3,7 +3,11 @@
   "name": "Personal Reddit Content Filter",
   "description": "Personal Reddit page element filter.",
   "version": "0.1.0",
-  "permissions": ["storage"],
+  "permissions": ["storage", "tabs"],
+  "options_page": "options.html",
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": [

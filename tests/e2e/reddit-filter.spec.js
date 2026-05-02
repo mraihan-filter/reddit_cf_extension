@@ -31,6 +31,36 @@ async function openRedditFixture(testInfo, url = "https://www.reddit.com/") {
   return { context, page };
 }
 
+async function getExtensionId(context) {
+  let [serviceWorker] = context.serviceWorkers();
+
+  if (!serviceWorker) {
+    serviceWorker = await context.waitForEvent("serviceworker");
+  }
+
+  return new URL(serviceWorker.url()).host;
+}
+
+async function setOption(page, id, checked) {
+  const control = page.locator(`#${id}`);
+  if ((await control.isChecked()) !== checked) {
+    await control.click();
+    if (checked) {
+      await expect(control).toBeChecked();
+    } else {
+      await expect(control).not.toBeChecked();
+    }
+
+    await page.waitForFunction(
+      async ([settingsKey, settingId, expected]) => {
+        const result = await chrome.storage.sync.get(settingsKey);
+        return result[settingsKey]?.[settingId] === expected;
+      },
+      ["redditContentFilterSettings", id, checked]
+    );
+  }
+}
+
 test.describe("Reddit content filter extension", () => {
   test("hides the homepage content wrapper on the Reddit homepage", async ({}, testInfo) => {
     const { context, page } = await openRedditFixture(testInfo);
@@ -60,6 +90,47 @@ test.describe("Reddit content filter extension", () => {
       await expect(page.getByTestId("games-on-reddit-section")).toBeHidden();
       await expect(page.getByTestId("left-recent-section")).toBeHidden();
       await expect(page.getByTestId("home-nav-section")).toBeVisible();
+    } finally {
+      await context.close();
+    }
+  });
+
+  test("master disable restores all filtered page sections", async ({}, testInfo) => {
+    const { context, page } = await openRedditFixture(testInfo);
+
+    try {
+      const extensionId = await getExtensionId(context);
+      const optionsPage = await context.newPage();
+      await optionsPage.goto(`chrome-extension://${extensionId}/options.html`);
+
+      await expect(page.getByTestId("homepage-content")).toBeHidden();
+      await expect(page.getByTestId("games-on-reddit-section")).toBeHidden();
+      await expect(page.getByTestId("left-recent-section")).toBeHidden();
+
+      await setOption(optionsPage, "enabled", false);
+
+      await expect(page.getByTestId("homepage-content")).toBeVisible();
+      await expect(page.getByTestId("games-on-reddit-section")).toBeVisible();
+      await expect(page.getByTestId("left-recent-section")).toBeVisible();
+      await expect(optionsPage.locator("#hideGamesOnReddit")).toBeDisabled();
+    } finally {
+      await context.close();
+    }
+  });
+
+  test("individual settings restore their matching sections", async ({}, testInfo) => {
+    const { context, page } = await openRedditFixture(testInfo);
+
+    try {
+      const extensionId = await getExtensionId(context);
+      const optionsPage = await context.newPage();
+      await optionsPage.goto(`chrome-extension://${extensionId}/options.html`);
+      await setOption(optionsPage, "hideGamesOnReddit", false);
+      await setOption(optionsPage, "hideHomepageContent", false);
+
+      await expect(page.getByTestId("games-on-reddit-section")).toBeVisible();
+      await expect(page.getByTestId("left-recent-section")).toBeHidden();
+      await expect(page.getByTestId("homepage-content")).toBeVisible();
     } finally {
       await context.close();
     }

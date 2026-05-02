@@ -1,0 +1,80 @@
+:root {
+  color-scheme: dark light;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #101214;
+  color: #f2f5f8;
+}
+
+body {
+  margin: 0;
+}
+
+.shell {
+  box-sizing: border-box;
+  max-width: 760px;
+  min-width: 320px;
+  padding: 28px;
+}
+
+h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+}
+
+#status {
+  color: #aab3bd;
+  font-size: 13px;
+  line-height: 1.35;
+  margin: 6px 0 20px;
+}
+
+.panel {
+  border: 1px solid #31363d;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.toggle-row {
+  align-items: center;
+  background: #181b20;
+  border-top: 1px solid #31363d;
+  box-sizing: border-box;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  min-height: 74px;
+  padding: 16px 18px;
+}
+
+.toggle-row:first-child {
+  border-top: 0;
+}
+
+.toggle-row.master {
+  background: #20252c;
+}
+
+strong,
+small {
+  display: block;
+}
+
+strong {
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+small {
+  color: #aab3bd;
+  font-size: 13px;
+  line-height: 1.35;
+  margin-top: 4px;
+}
+
+input[type="checkbox"] {
+  accent-color: #4f8cff;
+  flex: 0 0 auto;
+  height: 22px;
+  width: 42px;
+}
