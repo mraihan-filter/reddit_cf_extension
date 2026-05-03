@@ -31,7 +31,9 @@ const DEFAULT_SETTINGS = {
   hideSearchProfiles: true,
   hideBlockedCommunityOver18Button: true,
   hideSettingsMatureContentRow: true,
-  reviewSearchPagesWithAi: true
+  reviewSearchPagesWithAi: true,
+  blockedUrlPrefixes: [],
+  blockedExactUrls: []
 };
 const DEFAULT_AI_SETTINGS = {
   openRouterApiKey: "",
@@ -168,6 +170,43 @@ function getSearchQuery() {
   return new URLSearchParams(location.search).get("q") || "";
 }
 
+function normalizeCurrentUrlForBlocking(mode) {
+  const host = location.hostname.toLowerCase().replace(/^www\./, "");
+  let pathname = location.pathname || "/";
+  pathname = pathname.replace(/\/{2,}/g, "/");
+  if (pathname.length > 1) {
+    pathname = pathname.replace(/\/+$/, "");
+  }
+
+  const base = `${host}${pathname}`;
+  return mode === "exact" ? `${base}${location.search}` : base;
+}
+
+function getMatchedUrlBlockRule() {
+  const host = location.hostname.toLowerCase().replace(/^www\./, "");
+
+  if (host !== "reddit.com") {
+    return null;
+  }
+
+  const exactCurrent = normalizeCurrentUrlForBlocking("exact");
+  const prefixCurrent = normalizeCurrentUrlForBlocking("prefix");
+
+  for (const rule of currentSettings.blockedExactUrls || []) {
+    if (exactCurrent === rule) {
+      return { type: "Exact URL", rule };
+    }
+  }
+
+  for (const rule of currentSettings.blockedUrlPrefixes || []) {
+    if (prefixCurrent === rule || prefixCurrent.startsWith(`${rule}/`)) {
+      return { type: "URL path", rule };
+    }
+  }
+
+  return null;
+}
+
 function normalizeSearchQuery(query) {
   return query
     .normalize("NFKC")
@@ -279,8 +318,8 @@ function filterDocument() {
   return hideAlwaysBlockedSections() + hideHomepageContent() + hideSearchDropdownSections() + hideBlockedCommunityModalActions() + hideSettingsRows();
 }
 
-function getCategoryLabels(categories = []) {
-  return categories.map((category) => CATEGORY_LABELS[category] || `Category ${category}`);
+function getReasonLabels(reasons = []) {
+  return reasons.map((reason) => typeof reason === "string" ? reason : CATEGORY_LABELS[reason] || `Category ${reason}`);
 }
 
 function ensureAiOverlay(mode, text, categories = []) {
@@ -329,12 +368,12 @@ function ensureAiOverlay(mode, text, categories = []) {
   }
 
   overlay.dataset.mode = mode;
-  overlay.querySelector(".rcf-ai-title").textContent = mode === "blocked" ? "Search blocked" : "Reviewing search";
+  overlay.querySelector(".rcf-ai-title").textContent = mode === "loading" ? "Reviewing search" : mode === "url-blocked" ? "Page blocked" : "Search blocked";
   overlay.querySelector(".rcf-ai-copy").textContent = text;
 
   const reasons = overlay.querySelector(".rcf-ai-reasons");
   reasons.textContent = "";
-  for (const label of getCategoryLabels(categories)) {
+  for (const label of getReasonLabels(categories)) {
     const item = document.createElement("li");
     item.textContent = label;
     reasons.append(item);
@@ -618,6 +657,26 @@ async function reviewCurrentSearchPage() {
   }
 }
 
+function reviewCurrentUrlBlock() {
+  if (!currentSettings.enabled) {
+    removeAiOverlay();
+    return false;
+  }
+
+  const matchedRule = getMatchedUrlBlockRule();
+
+  if (!matchedRule) {
+    return false;
+  }
+
+  ensureAiOverlay(
+    "url-blocked",
+    "This Reddit page is blocked by a custom URL rule.",
+    [`${matchedRule.type}: ${matchedRule.rule}`]
+  );
+  return true;
+}
+
 function applyAiVerdict(decision, blockedText, categories = []) {
   if (decision === "allow") {
     removeAiOverlay();
@@ -635,6 +694,9 @@ function reconcileRoute() {
   }
 
   filterDocument();
+  if (reviewCurrentUrlBlock()) {
+    return;
+  }
   reviewCurrentSearchPage();
 }
 
@@ -730,6 +792,9 @@ function applySettings(settings) {
   ensureObserver();
   filterDocument();
   if (settingsLoaded) {
+    if (reviewCurrentUrlBlock()) {
+      return;
+    }
     reviewCurrentSearchPage();
   }
 }

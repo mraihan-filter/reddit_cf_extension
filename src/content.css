@@ -40,7 +40,8 @@
   width: 34px;
 }
 
-#reddit-content-filter-ai-overlay[data-mode="blocked"] .rcf-ai-spinner {
+#reddit-content-filter-ai-overlay[data-mode="blocked"] .rcf-ai-spinner,
+#reddit-content-filter-ai-overlay[data-mode="url-blocked"] .rcf-ai-spinner {
   animation: none;
   background: #ff4500;
   border: 0;
@@ -105,7 +106,8 @@
   margin: 0;
 }
 
-#reddit-content-filter-ai-overlay[data-mode="blocked"] .rcf-ai-card {
+#reddit-content-filter-ai-overlay[data-mode="blocked"] .rcf-ai-card,
+#reddit-content-filter-ai-overlay[data-mode="url-blocked"] .rcf-ai-card {
   display: grid;
   grid-template-columns: auto 1fr;
   grid-template-areas:
@@ -116,17 +118,20 @@
   padding-top: 28px;
 }
 
-#reddit-content-filter-ai-overlay[data-mode="blocked"] .rcf-ai-spinner {
+#reddit-content-filter-ai-overlay[data-mode="blocked"] .rcf-ai-spinner,
+#reddit-content-filter-ai-overlay[data-mode="url-blocked"] .rcf-ai-spinner {
   grid-area: signal;
   margin-left: 28px;
 }
 
-#reddit-content-filter-ai-overlay[data-mode="blocked"] .rcf-ai-title {
+#reddit-content-filter-ai-overlay[data-mode="blocked"] .rcf-ai-title,
+#reddit-content-filter-ai-overlay[data-mode="url-blocked"] .rcf-ai-title {
   grid-area: title;
   margin: 0 28px 4px 12px;
 }
 
-#reddit-content-filter-ai-overlay[data-mode="blocked"] .rcf-ai-copy {
+#reddit-content-filter-ai-overlay[data-mode="blocked"] .rcf-ai-copy,
+#reddit-content-filter-ai-overlay[data-mode="url-blocked"] .rcf-ai-copy {
   grid-area: copy;
   margin: 0 28px 0 12px;
 }
@@ -168,7 +173,8 @@
   border-top: 1px solid #2f3a44;
 }
 
-#reddit-content-filter-ai-overlay[data-mode="blocked"] .rcf-ai-actions {
+#reddit-content-filter-ai-overlay[data-mode="blocked"] .rcf-ai-actions,
+#reddit-content-filter-ai-overlay[data-mode="url-blocked"] .rcf-ai-actions {
   display: flex;
 }
 

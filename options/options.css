@@ -348,14 +348,22 @@ input[type="checkbox"]:disabled {
   margin-top: 0;
 }
 
-.model-tags {
+.url-rule-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+}
+
+.model-tags,
+.rule-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 4px;
 }
 
-.model-tag {
+.model-tag,
+.rule-tag {
   align-items: center;
   background: #101820;
   border: 1px solid #34414c;
@@ -373,7 +381,8 @@ input[type="checkbox"]:disabled {
   box-shadow: inset 0 0 0 1px rgba(255, 96, 64, 0.18);
 }
 
-.model-tag span {
+.model-tag span,
+.rule-tag span {
   font-size: 12px;
   font-weight: 800;
   overflow: hidden;
@@ -381,7 +390,8 @@ input[type="checkbox"]:disabled {
   white-space: nowrap;
 }
 
-.model-tag button {
+.model-tag button,
+.rule-tag button {
   align-items: center;
   background: transparent;
   border: 0;
@@ -397,9 +407,16 @@ input[type="checkbox"]:disabled {
   width: 24px;
 }
 
-.model-tag button:hover {
+.model-tag button:hover,
+.rule-tag button:hover {
   background: #24303a;
   color: #ff7a45;
+}
+
+.empty-rule-note {
+  color: #a9bac7;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .lab-runtime-section {
@@ -620,6 +637,7 @@ input[type="checkbox"]:disabled {
   .app-shell,
   .logs-layout,
   .form-grid,
+  .url-rule-grid,
   .lab-layout,
   .lab-logs-layout {
     grid-template-columns: 1fr;

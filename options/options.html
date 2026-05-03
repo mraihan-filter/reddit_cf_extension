@@ -45,7 +45,27 @@
         <section class="view" data-view-panel="urlBlocking">
           <p class="eyebrow">Options</p>
           <h2>URL Blocking</h2>
-          <div class="empty-panel">URL inspection rules will be added after page-element filtering is stable.</div>
+          <div class="url-rule-grid">
+            <div class="field-card">
+              <strong>Block URL and deeper paths</strong>
+              <small>Example: reddit.com/news blocks /news and /news/anything.</small>
+              <div class="inline-controls">
+                <input id="blockedUrlPrefixInput" autocomplete="off" spellcheck="false" type="text" placeholder="reddit.com/news">
+                <button id="addBlockedUrlPrefix" type="button">Add</button>
+              </div>
+              <div id="blockedUrlPrefixList" class="rule-tags" aria-label="Blocked URL prefixes"></div>
+            </div>
+
+            <div class="field-card">
+              <strong>Block exact URL only</strong>
+              <small>Example: reddit.com/explore blocks only that normalized URL.</small>
+              <div class="inline-controls">
+                <input id="blockedExactUrlInput" autocomplete="off" spellcheck="false" type="text" placeholder="reddit.com/explore">
+                <button id="addBlockedExactUrl" type="button">Add</button>
+              </div>
+              <div id="blockedExactUrlList" class="rule-tags" aria-label="Blocked exact URLs"></div>
+            </div>
+          </div>
         </section>
 
         <section class="view" data-view-panel="cleanup">

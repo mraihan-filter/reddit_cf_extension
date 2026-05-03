@@ -17,7 +17,9 @@ const DEFAULT_SETTINGS = {
   hideSearchProfiles: true,
   hideBlockedCommunityOver18Button: true,
   hideSettingsMatureContentRow: true,
-  reviewSearchPagesWithAi: true
+  reviewSearchPagesWithAi: true,
+  blockedUrlPrefixes: [],
+  blockedExactUrls: []
 };
 const DEFAULT_AI_SETTINGS = {
   openRouterApiKey: "",
@@ -49,6 +51,12 @@ const modelInput = document.getElementById("openRouterModel");
 const logsList = document.getElementById("logsList");
 const logDetails = document.getElementById("logDetails");
 const logCount = document.getElementById("logCount");
+const blockedUrlPrefixInput = document.getElementById("blockedUrlPrefixInput");
+const addBlockedUrlPrefix = document.getElementById("addBlockedUrlPrefix");
+const blockedUrlPrefixList = document.getElementById("blockedUrlPrefixList");
+const blockedExactUrlInput = document.getElementById("blockedExactUrlInput");
+const addBlockedExactUrl = document.getElementById("addBlockedExactUrl");
+const blockedExactUrlList = document.getElementById("blockedExactUrlList");
 const aiLabModelInput = document.getElementById("aiLabModelInput");
 const aiLabModelSelect = document.getElementById("aiLabModelSelect");
 const aiLabAddModel = document.getElementById("aiLabAddModel");
@@ -103,6 +111,7 @@ function renderSettings(settings) {
     }
   }
 
+  renderUrlRules();
   updateDisabledState();
 }
 
@@ -220,6 +229,94 @@ async function saveSettings(settings) {
   setStatus("Settings saved");
 }
 
+function normalizeUrlRuleInput(value, mode) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return "";
+  }
+
+  let url;
+  try {
+    url = new URL(trimmed.includes("://") ? trimmed : `https://${trimmed}`);
+  } catch {
+    return "";
+  }
+
+  const host = url.hostname.toLowerCase().replace(/^www\./, "");
+  if (host !== "reddit.com") {
+    return "";
+  }
+
+  let pathname = url.pathname || "/";
+  pathname = pathname.replace(/\/{2,}/g, "/");
+  if (pathname.length > 1) {
+    pathname = pathname.replace(/\/+$/, "");
+  }
+
+  const base = `${host}${pathname}`;
+  return mode === "exact" ? `${base}${url.search}` : base;
+}
+
+function renderUrlRules() {
+  renderRuleTags(blockedUrlPrefixList, currentSettings.blockedUrlPrefixes, "blockedUrlPrefixes");
+  renderRuleTags(blockedExactUrlList, currentSettings.blockedExactUrls, "blockedExactUrls");
+}
+
+function renderRuleTags(container, rules, key) {
+  container.textContent = "";
+
+  if (!Array.isArray(rules) || rules.length === 0) {
+    const empty = document.createElement("span");
+    empty.className = "empty-rule-note";
+    empty.textContent = "No rules added.";
+    container.append(empty);
+    return;
+  }
+
+  for (const rule of rules) {
+    const tag = document.createElement("span");
+    tag.className = "rule-tag";
+    tag.innerHTML = `
+      <span>${escapeHtml(rule)}</span>
+      <button type="button" aria-label="Remove ${escapeHtml(rule)}" title="Remove rule">x</button>
+    `;
+    tag.querySelector("button").addEventListener("click", async () => {
+      const nextRules = currentSettings[key].filter((entry) => entry !== rule);
+      await saveSettings({
+        ...currentSettings,
+        [key]: nextRules
+      });
+      renderSettings(currentSettings);
+    });
+    container.append(tag);
+  }
+}
+
+async function addUrlRule(input, key, mode) {
+  const normalized = normalizeUrlRuleInput(input.value, mode);
+
+  if (!normalized) {
+    setStatus("Enter a valid reddit.com URL");
+    return;
+  }
+
+  const rules = Array.isArray(currentSettings[key]) ? currentSettings[key] : [];
+  if (rules.includes(normalized)) {
+    input.value = "";
+    setStatus("URL rule already exists");
+    return;
+  }
+
+  await saveSettings({
+    ...currentSettings,
+    [key]: [...rules, normalized]
+  });
+  input.value = "";
+  renderSettings(currentSettings);
+  setStatus("URL rule added");
+}
+
 async function saveAiSettings() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
@@ -268,6 +365,10 @@ function updateDisabledState() {
 
   apiKeyInput.disabled = !extensionEnabled;
   modelInput.disabled = !extensionEnabled;
+  blockedUrlPrefixInput.disabled = !extensionEnabled;
+  addBlockedUrlPrefix.disabled = !extensionEnabled;
+  blockedExactUrlInput.disabled = !extensionEnabled;
+  addBlockedExactUrl.disabled = !extensionEnabled;
 }
 
 function formatDate(timestamp) {
@@ -699,6 +800,24 @@ async function init() {
 
   apiKeyInput.addEventListener("input", saveAiSettings);
   modelInput.addEventListener("input", saveAiSettings);
+  addBlockedUrlPrefix.addEventListener("click", () => {
+    addUrlRule(blockedUrlPrefixInput, "blockedUrlPrefixes", "prefix");
+  });
+  blockedUrlPrefixInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      addUrlRule(blockedUrlPrefixInput, "blockedUrlPrefixes", "prefix");
+    }
+  });
+  addBlockedExactUrl.addEventListener("click", () => {
+    addUrlRule(blockedExactUrlInput, "blockedExactUrls", "exact");
+  });
+  blockedExactUrlInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      addUrlRule(blockedExactUrlInput, "blockedExactUrls", "exact");
+    }
+  });
   aiLabAddModel.addEventListener("click", async () => {
     const model = aiLabModelInput.value.trim();
 
