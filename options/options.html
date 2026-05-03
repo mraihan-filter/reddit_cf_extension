@@ -20,6 +20,7 @@
         <nav class="nav-list">
           <button class="nav-item active" type="button" data-view="general">General</button>
           <button class="nav-item" type="button" data-view="urlBlocking">URL Blocking</button>
+          <button class="nav-item" type="button" data-view="subredditGate">Subreddit Gate</button>
           <button class="nav-item" type="button" data-view="cleanup">Reddit Cleanup</button>
           <button class="nav-item" type="button" data-view="aiGate">AI Gate</button>
           <button class="nav-item" type="button" data-view="aiLab">AI Lab</button>
@@ -64,6 +65,30 @@
                 <button id="addBlockedExactUrl" type="button">Add</button>
               </div>
               <div id="blockedExactUrlList" class="rule-tags" aria-label="Blocked exact URLs"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" data-view-panel="subredditGate">
+          <p class="eyebrow">Experiment</p>
+          <h2>Subreddit Gate</h2>
+          <h3>Slug splitter experiment</h3>
+          <p class="section-copy">Test the exact subreddit slug splitting logic before the production gate is wired in.</p>
+
+          <div class="slug-experiment-layout">
+            <div class="field-card">
+              <strong>Subreddit slug or URL</strong>
+              <small>Accepts a bare slug or a full Reddit community URL.</small>
+              <div class="inline-controls">
+                <input id="subredditSlugInput" autocomplete="off" spellcheck="false" type="text" placeholder="BollyBlindsNGossip">
+                <button id="runSubredditSlugExperiment" type="button">Split</button>
+              </div>
+            </div>
+
+            <div class="field-card">
+              <strong>Splitter output</strong>
+              <small>These terms are what the future production gate will keyword-match.</small>
+              <div id="subredditSlugOutput" class="detail-grid slug-output-grid"></div>
             </div>
           </div>
         </section>
@@ -259,6 +284,7 @@
       </main>
     </div>
 
+    <script src="../src/subreddit-slug.js"></script>
     <script src="options.js"></script>
   </body>
 </html>

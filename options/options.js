@@ -57,6 +57,9 @@ const blockedUrlPrefixList = document.getElementById("blockedUrlPrefixList");
 const blockedExactUrlInput = document.getElementById("blockedExactUrlInput");
 const addBlockedExactUrl = document.getElementById("addBlockedExactUrl");
 const blockedExactUrlList = document.getElementById("blockedExactUrlList");
+const subredditSlugInput = document.getElementById("subredditSlugInput");
+const runSubredditSlugExperiment = document.getElementById("runSubredditSlugExperiment");
+const subredditSlugOutput = document.getElementById("subredditSlugOutput");
 const aiLabModelInput = document.getElementById("aiLabModelInput");
 const aiLabModelSelect = document.getElementById("aiLabModelSelect");
 const aiLabAddModel = document.getElementById("aiLabAddModel");
@@ -574,6 +577,26 @@ function detailCard(label, value, hint, wide = false) {
   return card;
 }
 
+function renderSubredditSlugExperiment() {
+  const tools = globalThis.redditContentFilterSlugTools;
+  const result = tools?.splitSubredditSlug(subredditSlugInput.value);
+
+  subredditSlugOutput.textContent = "";
+
+  if (!tools || !result) {
+    subredditSlugOutput.append(detailCard("Status", "Slug splitter is not loaded", "", true));
+    return;
+  }
+
+  subredditSlugOutput.append(
+    detailCard("Extracted slug", result.slug || "Not detected", ""),
+    detailCard("Normalized name", result.normalizedName || "Not detected", ""),
+    detailCard("Mode", result.splitMode, result.splitMode === "split" ? "Uppercase, number, or underscore split path." : "Whole lowercase slug path."),
+    detailCard("Split terms", result.terms.length ? result.terms.join("\n") : "No terms", "", true),
+    detailCard("JSON", JSON.stringify(result, null, 2), "", true)
+  );
+}
+
 function escapeHtml(value) {
   return value.replace(/[&<>"']/g, (char) => ({
     "&": "&amp;",
@@ -800,6 +823,8 @@ async function init() {
 
   apiKeyInput.addEventListener("input", saveAiSettings);
   modelInput.addEventListener("input", saveAiSettings);
+  runSubredditSlugExperiment.addEventListener("click", renderSubredditSlugExperiment);
+  subredditSlugInput.addEventListener("input", renderSubredditSlugExperiment);
   addBlockedUrlPrefix.addEventListener("click", () => {
     addUrlRule(blockedUrlPrefixInput, "blockedUrlPrefixes", "prefix");
   });
@@ -850,6 +875,7 @@ async function init() {
   document.getElementById("clearLogs").addEventListener("click", clearLogs);
   document.getElementById("removeLog").addEventListener("click", removeSelectedLog);
   document.getElementById("downloadLogs").addEventListener("click", downloadLogs);
+  renderSubredditSlugExperiment();
 
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName === "local" && changes[AI_LOGS_KEY]) {

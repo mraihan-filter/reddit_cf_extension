@@ -354,6 +354,17 @@ input[type="checkbox"]:disabled {
   grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
 }
 
+.slug-experiment-layout {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(360px, 0.8fr) minmax(520px, 1.2fr);
+  margin-top: 22px;
+}
+
+.slug-output-grid {
+  margin-top: 0;
+}
+
 .model-tags,
 .rule-tags {
   display: flex;
@@ -638,6 +649,7 @@ input[type="checkbox"]:disabled {
   .logs-layout,
   .form-grid,
   .url-rule-grid,
+  .slug-experiment-layout,
   .lab-layout,
   .lab-logs-layout {
     grid-template-columns: 1fr;
