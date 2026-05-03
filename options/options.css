@@ -361,6 +361,14 @@ input[type="checkbox"]:disabled {
   margin-top: 22px;
 }
 
+.subreddit-rule-grid {
+  margin: 18px 0 28px;
+}
+
+.section-subheading {
+  margin-top: 4px;
+}
+
 .slug-output-grid {
   margin-top: 0;
 }

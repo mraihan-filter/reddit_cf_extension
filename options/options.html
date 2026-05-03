@@ -70,10 +70,64 @@
         </section>
 
         <section class="view" data-view-panel="subredditGate">
-          <p class="eyebrow">Experiment</p>
+          <p class="eyebrow">Options</p>
           <h2>Subreddit Gate</h2>
-          <h3>Slug splitter experiment</h3>
-          <p class="section-copy">Test the exact subreddit slug splitting logic before the production gate is wired in.</p>
+          <h3>Community route scanner</h3>
+          <p class="section-copy">Gate Reddit community URLs separately from generic URL blocking.</p>
+
+          <div class="panel">
+            <label class="toggle-row">
+              <span>
+                <strong>Review subreddit URLs</strong>
+                <small>Show a loading gate and inspect /r/community routes.</small>
+              </span>
+              <input data-setting="subredditGateEnabled" type="checkbox">
+            </label>
+          </div>
+
+          <div class="url-rule-grid subreddit-rule-grid">
+            <div class="field-card">
+              <strong>Subreddit allowlist</strong>
+              <small>Subreddit names only. Allowlist is checked after the safe cache.</small>
+              <div class="inline-controls">
+                <input id="subredditAllowlistInput" autocomplete="off" spellcheck="false" type="text" placeholder="BollyBlindsNGossip">
+                <button id="addSubredditAllowlist" type="button">Add</button>
+              </div>
+              <div id="subredditAllowlist" class="rule-tags" aria-label="Subreddit allowlist"></div>
+            </div>
+
+            <div class="field-card">
+              <strong>Subreddit blocklist</strong>
+              <small>Subreddit names only. Blocklist is checked before keyword matching.</small>
+              <div class="inline-controls">
+                <input id="subredditBlocklistInput" autocomplete="off" spellcheck="false" type="text" placeholder="exampleSubreddit">
+                <button id="addSubredditBlocklist" type="button">Add</button>
+              </div>
+              <div id="subredditBlocklist" class="rule-tags" aria-label="Subreddit blocklist"></div>
+            </div>
+
+            <div class="field-card">
+              <strong>Subreddit keywords</strong>
+              <small>Whole words or phrases matched against slug terms, display name, and description.</small>
+              <div class="inline-controls">
+                <input id="subredditKeywordInput" autocomplete="off" spellcheck="false" type="text" placeholder="keyword or phrase">
+                <button id="addSubredditKeyword" type="button">Add</button>
+              </div>
+              <div id="subredditKeywordList" class="rule-tags" aria-label="Subreddit keyword list"></div>
+            </div>
+
+            <div class="field-card">
+              <strong>Safe cache</strong>
+              <small>Last 20 clean subreddit names allowed by the gate.</small>
+              <div class="inline-controls">
+                <button id="clearSubredditSafeCache" type="button">Clear safe cache</button>
+              </div>
+              <div id="subredditSafeCacheList" class="rule-tags" aria-label="Subreddit safe cache"></div>
+            </div>
+          </div>
+
+          <h3 class="section-subheading">Slug splitter experiment</h3>
+          <p class="section-copy">Test the exact subreddit slug splitting logic used by the production gate.</p>
 
           <div class="slug-experiment-layout">
             <div class="field-card">

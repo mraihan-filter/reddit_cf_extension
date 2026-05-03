@@ -17,7 +17,7 @@
         "*://*.redd.it/*"
       ],
       "css": ["src/content.css"],
-      "js": ["src/content.js"],
+      "js": ["src/subreddit-slug.js", "src/content.js"],
       "run_at": "document_start"
     }
   ],

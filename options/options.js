@@ -4,6 +4,7 @@ const AI_CACHE_KEY = "redditContentFilterAiVerdictCache";
 const AI_LOGS_KEY = "redditContentFilterRuntimeLogs";
 const AI_LAB_SETTINGS_KEY = "redditContentFilterAiLabSettings";
 const AI_LAB_LOGS_KEY = "redditContentFilterAiLabLogs";
+const SUBREDDIT_SAFE_CACHE_KEY = "redditContentFilterSubredditSafeCache";
 const PROMPT_INDEX_PATH = "prompts/index.json";
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const MAX_AI_LAB_LOGS = 100;
@@ -19,7 +20,11 @@ const DEFAULT_SETTINGS = {
   hideSettingsMatureContentRow: true,
   reviewSearchPagesWithAi: true,
   blockedUrlPrefixes: [],
-  blockedExactUrls: []
+  blockedExactUrls: [],
+  subredditGateEnabled: true,
+  subredditAllowlist: [],
+  subredditBlocklist: [],
+  subredditKeywords: []
 };
 const DEFAULT_AI_SETTINGS = {
   openRouterApiKey: "",
@@ -37,6 +42,7 @@ let currentAiSettings = { ...DEFAULT_AI_SETTINGS };
 let aiLabSettings = { ...DEFAULT_AI_LAB_SETTINGS };
 let runtimeLogs = [];
 let aiLabLogs = [];
+let subredditSafeCache = [];
 let aiLabPrompts = [];
 let selectedLogId = "";
 let selectedAiLabLogId = "";
@@ -60,6 +66,17 @@ const blockedExactUrlList = document.getElementById("blockedExactUrlList");
 const subredditSlugInput = document.getElementById("subredditSlugInput");
 const runSubredditSlugExperiment = document.getElementById("runSubredditSlugExperiment");
 const subredditSlugOutput = document.getElementById("subredditSlugOutput");
+const subredditAllowlistInput = document.getElementById("subredditAllowlistInput");
+const addSubredditAllowlist = document.getElementById("addSubredditAllowlist");
+const subredditAllowlist = document.getElementById("subredditAllowlist");
+const subredditBlocklistInput = document.getElementById("subredditBlocklistInput");
+const addSubredditBlocklist = document.getElementById("addSubredditBlocklist");
+const subredditBlocklist = document.getElementById("subredditBlocklist");
+const subredditKeywordInput = document.getElementById("subredditKeywordInput");
+const addSubredditKeyword = document.getElementById("addSubredditKeyword");
+const subredditKeywordList = document.getElementById("subredditKeywordList");
+const clearSubredditSafeCache = document.getElementById("clearSubredditSafeCache");
+const subredditSafeCacheList = document.getElementById("subredditSafeCacheList");
 const aiLabModelInput = document.getElementById("aiLabModelInput");
 const aiLabModelSelect = document.getElementById("aiLabModelSelect");
 const aiLabAddModel = document.getElementById("aiLabAddModel");
@@ -115,6 +132,7 @@ function renderSettings(settings) {
   }
 
   renderUrlRules();
+  renderSubredditGateRules();
   updateDisabledState();
 }
 
@@ -266,6 +284,13 @@ function renderUrlRules() {
   renderRuleTags(blockedExactUrlList, currentSettings.blockedExactUrls, "blockedExactUrls");
 }
 
+function renderSubredditGateRules() {
+  renderRuleTags(subredditAllowlist, currentSettings.subredditAllowlist, "subredditAllowlist");
+  renderRuleTags(subredditBlocklist, currentSettings.subredditBlocklist, "subredditBlocklist");
+  renderRuleTags(subredditKeywordList, currentSettings.subredditKeywords, "subredditKeywords");
+  renderStaticTags(subredditSafeCacheList, subredditSafeCache);
+}
+
 function renderRuleTags(container, rules, key) {
   container.textContent = "";
 
@@ -296,6 +321,34 @@ function renderRuleTags(container, rules, key) {
   }
 }
 
+function renderStaticTags(container, rules) {
+  container.textContent = "";
+
+  if (!Array.isArray(rules) || rules.length === 0) {
+    const empty = document.createElement("span");
+    empty.className = "empty-rule-note";
+    empty.textContent = "No cached subreddits.";
+    container.append(empty);
+    return;
+  }
+
+  for (const rule of rules) {
+    const tag = document.createElement("span");
+    tag.className = "rule-tag";
+    tag.innerHTML = `<span>${escapeHtml(rule)}</span>`;
+    container.append(tag);
+  }
+}
+
+function normalizeSubredditNameInput(value) {
+  const tools = globalThis.redditContentFilterSlugTools;
+  return tools?.splitSubredditSlug(value).normalizedName || "";
+}
+
+function normalizeKeywordInput(value) {
+  return globalThis.redditContentFilterSlugTools?.normalizeText(value) || String(value || "").trim().toLowerCase();
+}
+
 async function addUrlRule(input, key, mode) {
   const normalized = normalizeUrlRuleInput(input.value, mode);
 
@@ -318,6 +371,30 @@ async function addUrlRule(input, key, mode) {
   input.value = "";
   renderSettings(currentSettings);
   setStatus("URL rule added");
+}
+
+async function addSubredditRule(input, key, normalizer = normalizeSubredditNameInput) {
+  const normalized = normalizer(input.value);
+
+  if (!normalized) {
+    setStatus("Enter a valid value");
+    return;
+  }
+
+  const rules = Array.isArray(currentSettings[key]) ? currentSettings[key] : [];
+  if (rules.includes(normalized)) {
+    input.value = "";
+    setStatus("Rule already exists");
+    return;
+  }
+
+  await saveSettings({
+    ...currentSettings,
+    [key]: [...rules, normalized]
+  });
+  input.value = "";
+  renderSettings(currentSettings);
+  setStatus("Subreddit gate rule added");
 }
 
 async function saveAiSettings() {
@@ -372,6 +449,13 @@ function updateDisabledState() {
   addBlockedUrlPrefix.disabled = !extensionEnabled;
   blockedExactUrlInput.disabled = !extensionEnabled;
   addBlockedExactUrl.disabled = !extensionEnabled;
+  subredditAllowlistInput.disabled = !extensionEnabled || !currentSettings.subredditGateEnabled;
+  addSubredditAllowlist.disabled = !extensionEnabled || !currentSettings.subredditGateEnabled;
+  subredditBlocklistInput.disabled = !extensionEnabled || !currentSettings.subredditGateEnabled;
+  addSubredditBlocklist.disabled = !extensionEnabled || !currentSettings.subredditGateEnabled;
+  subredditKeywordInput.disabled = !extensionEnabled || !currentSettings.subredditGateEnabled;
+  addSubredditKeyword.disabled = !extensionEnabled || !currentSettings.subredditGateEnabled;
+  clearSubredditSafeCache.disabled = !extensionEnabled || !currentSettings.subredditGateEnabled;
 }
 
 function formatDate(timestamp) {
@@ -401,6 +485,14 @@ function getDecision(log) {
   return log?.decision === "allow" ? "Allow" : "Block";
 }
 
+function getLogTitle(log) {
+  if (log?.kind === "subredditGate") {
+    return log.normalizedSubreddit || log.subredditSlug || "Untitled subreddit";
+  }
+
+  return log?.normalizedQuery || log?.query || "Untitled query";
+}
+
 function renderLogs() {
   logCount.textContent = String(runtimeLogs.length);
   logsList.textContent = "";
@@ -425,7 +517,7 @@ function renderLogs() {
     button.type = "button";
     button.innerHTML = `
       <span class="log-title-row">
-        <strong>${escapeHtml(log.normalizedQuery || log.query || "Untitled query")}</strong>
+        <strong>${escapeHtml(getLogTitle(log))}</strong>
         <span class="decision-pill ${decision}">${getDecision(log)}</span>
       </span>
       <span class="log-summary">${escapeHtml(buildLogSummary(log))}</span>
@@ -521,6 +613,12 @@ function renderSelectedAiLabLog(log) {
 }
 
 function buildLogSummary(log) {
+  if (log?.kind === "subredditGate") {
+    const source = log.decisionSource || "subreddit gate";
+    const match = log.matchedKeyword ? ` | ${log.matchedKeyword}` : "";
+    return `${getDecision(log)} | ${source}${match} | ${formatLatency(log.roundTripMs)} | ${formatDate(log.timestamp)}`;
+  }
+
   const mode = log.cacheStatus === "cache hit" ? "cache" : log.workerFetchLatencyMs ? "worker fetch" : "content fetch";
   const cost = typeof log.cost === "number" ? ` | $${log.cost}` : "";
   return `${getDecision(log)} | ${mode} | ${formatLatency(log.roundTripMs)} | ${summarizeUsage(log.usage)}${cost} | ${formatDate(log.timestamp)}`;
@@ -531,6 +629,27 @@ function renderSelectedLog(log) {
 
   if (!log) {
     logDetails.append(detailCard("Decision", "No log selected", "", true));
+    return;
+  }
+
+  if (log.kind === "subredditGate") {
+    const cards = [
+      detailCard("Decision", getDecision(log), ""),
+      detailCard("Subreddit", log.normalizedSubreddit || log.subredditSlug || "Not recorded", log.subredditSlug ? `Original: ${log.subredditSlug}` : ""),
+      detailCard("Decision source", log.decisionSource || "Not recorded", log.cacheStatus || ""),
+      detailCard("Round-trip", formatLatency(log.roundTripMs), "Total gate timing."),
+      detailCard("Overlay visible", formatLatency(log.overlayVisibleMs), "How long the page gate stayed on screen."),
+      detailCard("Slug split mode", log.splitMode || "Not recorded", ""),
+      detailCard("Slug terms", Array.isArray(log.splitTerms) && log.splitTerms.length ? log.splitTerms.join("\n") : "No terms recorded.", "", true),
+      detailCard("Matched keyword", log.matchedKeyword || "No keyword match", log.matchedTextSource || ""),
+      detailCard("Matched text", log.matchedText || "No matched text recorded.", "", true)
+    ];
+
+    if (log.failureReason) {
+      cards.splice(1, 0, detailCard("Failure", log.failureReason, "", true));
+    }
+
+    logDetails.append(...cards);
     return;
   }
 
@@ -557,6 +676,10 @@ function renderSelectedLog(log) {
 }
 
 function formatMatches(log) {
+  if (log?.kind === "subredditGate") {
+    return log.matchedKeyword ? `${log.matchedTextSource || "Match"}: ${log.matchedKeyword}` : "No match details recorded.";
+  }
+
   if (!Array.isArray(log.categories) || log.categories.length === 0) {
     return "No match details recorded.";
   }
@@ -749,6 +872,13 @@ async function clearCache() {
   setStatus("AI verdict cache cleared");
 }
 
+async function clearSubredditCache() {
+  subredditSafeCache = [];
+  await chrome.storage.local.set({ [SUBREDDIT_SAFE_CACHE_KEY]: [] });
+  renderSubredditGateRules();
+  setStatus("Subreddit safe cache cleared");
+}
+
 async function clearLogs() {
   runtimeLogs = [];
   selectedLogId = "";
@@ -793,9 +923,10 @@ async function init() {
   await loadPromptIndex();
   const [syncResult, localResult] = await Promise.all([
     chrome.storage.sync.get(SETTINGS_KEY),
-    chrome.storage.local.get([LOCAL_AI_SETTINGS_KEY, AI_LOGS_KEY, AI_LAB_SETTINGS_KEY, AI_LAB_LOGS_KEY])
+    chrome.storage.local.get([LOCAL_AI_SETTINGS_KEY, AI_LOGS_KEY, AI_LAB_SETTINGS_KEY, AI_LAB_LOGS_KEY, SUBREDDIT_SAFE_CACHE_KEY])
   ]);
 
+  subredditSafeCache = Array.isArray(localResult[SUBREDDIT_SAFE_CACHE_KEY]) ? localResult[SUBREDDIT_SAFE_CACHE_KEY] : [];
   renderSettings(syncResult[SETTINGS_KEY]);
   renderAiSettings(localResult[LOCAL_AI_SETTINGS_KEY]);
   renderAiLabSettings(localResult[AI_LAB_SETTINGS_KEY]);
@@ -823,6 +954,34 @@ async function init() {
 
   apiKeyInput.addEventListener("input", saveAiSettings);
   modelInput.addEventListener("input", saveAiSettings);
+  addSubredditAllowlist.addEventListener("click", () => {
+    addSubredditRule(subredditAllowlistInput, "subredditAllowlist");
+  });
+  subredditAllowlistInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      addSubredditRule(subredditAllowlistInput, "subredditAllowlist");
+    }
+  });
+  addSubredditBlocklist.addEventListener("click", () => {
+    addSubredditRule(subredditBlocklistInput, "subredditBlocklist");
+  });
+  subredditBlocklistInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      addSubredditRule(subredditBlocklistInput, "subredditBlocklist");
+    }
+  });
+  addSubredditKeyword.addEventListener("click", () => {
+    addSubredditRule(subredditKeywordInput, "subredditKeywords", normalizeKeywordInput);
+  });
+  subredditKeywordInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      addSubredditRule(subredditKeywordInput, "subredditKeywords", normalizeKeywordInput);
+    }
+  });
+  clearSubredditSafeCache.addEventListener("click", clearSubredditCache);
   runSubredditSlugExperiment.addEventListener("click", renderSubredditSlugExperiment);
   subredditSlugInput.addEventListener("input", renderSubredditSlugExperiment);
   addBlockedUrlPrefix.addEventListener("click", () => {
@@ -886,6 +1045,11 @@ async function init() {
     if (areaName === "local" && changes[AI_LAB_LOGS_KEY]) {
       aiLabLogs = Array.isArray(changes[AI_LAB_LOGS_KEY].newValue) ? changes[AI_LAB_LOGS_KEY].newValue : [];
       renderAiLabLogs();
+    }
+
+    if (areaName === "local" && changes[SUBREDDIT_SAFE_CACHE_KEY]) {
+      subredditSafeCache = Array.isArray(changes[SUBREDDIT_SAFE_CACHE_KEY].newValue) ? changes[SUBREDDIT_SAFE_CACHE_KEY].newValue : [];
+      renderSubredditGateRules();
     }
   });
 

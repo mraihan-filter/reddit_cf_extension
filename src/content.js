@@ -4,12 +4,15 @@ const SETTINGS_KEY = "redditContentFilterSettings";
 const LOCAL_AI_SETTINGS_KEY = "redditContentFilterAiSettings";
 const AI_CACHE_KEY = "redditContentFilterAiVerdictCache";
 const AI_LOGS_KEY = "redditContentFilterRuntimeLogs";
+const SUBREDDIT_SAFE_CACHE_KEY = "redditContentFilterSubredditSafeCache";
 const PREFILTER_STYLE_ID = "reddit-content-filter-prefilter";
 const OVERLAY_ID = "reddit-content-filter-ai-overlay";
 const PROMPT_PATH = "prompts/search-review-default.md";
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_LOGS = 50;
+const MAX_SUBREDDIT_SAFE_CACHE = 20;
+const SUBREDDIT_METADATA_TIMEOUT_MS = 3000;
 
 const GAMES_ON_REDDIT_SELECTOR = 'faceplate-tracker[source="nav"][action="view"][noun="games_drawer"]';
 const LEFT_RECENT_SELECTOR = "#recent-communities-section";
@@ -21,6 +24,7 @@ const SEARCH_COMMUNITY_ITEMS_SELECTOR = 'search-telemetry-tracker[data-type="sea
 const SEARCH_PROFILE_ITEMS_SELECTOR = 'search-telemetry-tracker[data-type="search-dropdown-item"][data-faceplate-tracking-context*="\\"type\\":\\"profile\\""]';
 const BLOCKED_COMMUNITY_OVER_18_SELECTOR = 'faceplate-tracker[source="blocked_community_page"][action="click"][noun="browse"], #nsfw-action-button, confirm-over-18';
 const SETTINGS_MATURE_CONTENT_ROW_SELECTOR = 'settings-preferences label[data-testid="is-nsfw-shown"], label[data-testid="is-nsfw-shown"]';
+const SUBREDDIT_HEADER_SELECTOR = "shreddit-subreddit-header";
 
 const DEFAULT_SETTINGS = {
   enabled: true,
@@ -33,7 +37,11 @@ const DEFAULT_SETTINGS = {
   hideSettingsMatureContentRow: true,
   reviewSearchPagesWithAi: true,
   blockedUrlPrefixes: [],
-  blockedExactUrls: []
+  blockedExactUrls: [],
+  subredditGateEnabled: true,
+  subredditAllowlist: [],
+  subredditBlocklist: [],
+  subredditKeywords: []
 };
 const DEFAULT_AI_SETTINGS = {
   openRouterApiKey: "",
@@ -54,6 +62,7 @@ let observer;
 let currentUrl = location.href;
 let routeWatcherInstalled = false;
 let activeSearchReviewId = 0;
+let activeSubredditReviewId = 0;
 let overlayShownAt = 0;
 let settingsLoaded = false;
 const observedRoots = new WeakSet();
@@ -170,6 +179,35 @@ function getSearchQuery() {
   return new URLSearchParams(location.search).get("q") || "";
 }
 
+function getSubredditRouteInfo() {
+  const host = location.hostname.toLowerCase().replace(/^www\./, "");
+
+  if (host !== "reddit.com") {
+    return null;
+  }
+
+  const parts = location.pathname.split("/").filter(Boolean);
+  if (parts[0]?.toLowerCase() !== "r" || !parts[1]) {
+    return null;
+  }
+
+  const tools = globalThis.redditContentFilterSlugTools;
+  const slug = decodeURIComponent(parts[1]);
+  const split = tools?.splitSubredditSlug(slug) || {
+    slug,
+    normalizedName: normalizeSearchQuery(slug),
+    splitMode: "single-lowercase-term",
+    terms: [normalizeSearchQuery(slug)].filter(Boolean)
+  };
+
+  return {
+    slug,
+    normalizedName: split.normalizedName,
+    splitMode: split.splitMode,
+    terms: split.terms
+  };
+}
+
 function normalizeCurrentUrlForBlocking(mode) {
   const host = location.hostname.toLowerCase().replace(/^www\./, "");
   let pathname = location.pathname || "/";
@@ -186,6 +224,10 @@ function getMatchedUrlBlockRule() {
   const host = location.hostname.toLowerCase().replace(/^www\./, "");
 
   if (host !== "reddit.com") {
+    return null;
+  }
+
+  if (getSubredditRouteInfo()) {
     return null;
   }
 
@@ -213,6 +255,16 @@ function normalizeSearchQuery(query) {
     .replace(/[\u200B-\u200D\uFEFF]/g, "")
     .trim()
     .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function normalizeKeywordText(value) {
+  return String(value || "")
+    .normalize("NFKC")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
     .replace(/\s+/g, " ");
 }
 
@@ -368,7 +420,12 @@ function ensureAiOverlay(mode, text, categories = []) {
   }
 
   overlay.dataset.mode = mode;
-  overlay.querySelector(".rcf-ai-title").textContent = mode === "loading" ? "Reviewing search" : mode === "url-blocked" ? "Page blocked" : "Search blocked";
+  overlay.querySelector(".rcf-ai-title").textContent =
+    mode === "subreddit-loading" ? "Reviewing community" :
+      mode === "subreddit-blocked" ? "Community blocked" :
+        mode === "loading" ? "Reviewing search" :
+          mode === "url-blocked" ? "Page blocked" :
+            "Search blocked";
   overlay.querySelector(".rcf-ai-copy").textContent = text;
 
   const reasons = overlay.querySelector(".rcf-ai-reasons");
@@ -529,6 +586,21 @@ async function writeCachedVerdict(normalizedQuery, verdict) {
   await chrome.storage.local.set({ [AI_CACHE_KEY]: cache });
 }
 
+async function readSubredditSafeCache() {
+  const result = await chrome.storage.local.get(SUBREDDIT_SAFE_CACHE_KEY);
+  return Array.isArray(result[SUBREDDIT_SAFE_CACHE_KEY]) ? result[SUBREDDIT_SAFE_CACHE_KEY] : [];
+}
+
+async function writeSubredditSafeCache(normalizedName) {
+  const cache = await readSubredditSafeCache();
+  const nextCache = [
+    normalizedName,
+    ...cache.filter((entry) => entry !== normalizedName)
+  ].slice(0, MAX_SUBREDDIT_SAFE_CACHE);
+
+  await chrome.storage.local.set({ [SUBREDDIT_SAFE_CACHE_KEY]: nextCache });
+}
+
 async function appendRuntimeLog(log) {
   const result = await chrome.storage.local.get(AI_LOGS_KEY);
   const logs = Array.isArray(result[AI_LOGS_KEY]) ? result[AI_LOGS_KEY] : [];
@@ -545,6 +617,115 @@ function buildLog(base, details) {
     ...base,
     ...details
   };
+}
+
+function normalizeRuleList(values = []) {
+  return Array.isArray(values) ? values.map(normalizeKeywordText).filter(Boolean) : [];
+}
+
+function normalizeSubredditNameList(values = []) {
+  const tools = globalThis.redditContentFilterSlugTools;
+  return Array.isArray(values)
+    ? values.map((value) => tools?.normalizeText(value) || normalizeSearchQuery(value)).filter(Boolean)
+    : [];
+}
+
+function findKeywordMatch(text, keywords) {
+  const normalizedText = normalizeKeywordText(text);
+
+  if (!normalizedText) {
+    return null;
+  }
+
+  const haystack = ` ${normalizedText} `;
+  for (const keyword of normalizeRuleList(keywords)) {
+    if (haystack.includes(` ${keyword} `)) {
+      return {
+        keyword,
+        text: normalizedText
+      };
+    }
+  }
+
+  return null;
+}
+
+function findSlugKeywordMatch(terms, keywords) {
+  return findKeywordMatch(Array.isArray(terms) ? terms.join(" ") : "", keywords);
+}
+
+function findSubredditHeader() {
+  return queryDeepAll(SUBREDDIT_HEADER_SELECTOR)[0] || null;
+}
+
+async function waitForSubredditHeader(reviewId) {
+  const startedAt = performance.now();
+
+  while (performance.now() - startedAt < SUBREDDIT_METADATA_TIMEOUT_MS) {
+    if (reviewId !== activeSubredditReviewId) {
+      return null;
+    }
+
+    const header = findSubredditHeader();
+    if (header) {
+      return header;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+
+  return null;
+}
+
+function getSubredditMetadata(header) {
+  if (!header) {
+    return {
+      name: "",
+      displayName: "",
+      description: ""
+    };
+  }
+
+  return {
+    name: header.getAttribute("name") || "",
+    displayName: header.getAttribute("display-name") || "",
+    description: header.getAttribute("description") || ""
+  };
+}
+
+function buildSubredditLogBase(routeInfo, startedAt) {
+  return {
+    kind: "subredditGate",
+    query: "",
+    normalizedQuery: "",
+    subredditSlug: routeInfo.slug,
+    normalizedSubreddit: routeInfo.normalizedName,
+    splitMode: routeInfo.splitMode,
+    splitTerms: routeInfo.terms,
+    decisionSource: "",
+    matchedKeyword: "",
+    matchedTextSource: "",
+    matchedText: "",
+    roundTripMs: Math.round(performance.now() - startedAt),
+    directFetchLatencyMs: null,
+    workerFetchLatencyMs: null,
+    model: "",
+    provider: "",
+    responseId: "",
+    usage: {},
+    cost: null,
+    rawOutput: "",
+    categories: [],
+    cacheStatus: "",
+    failureReason: ""
+  };
+}
+
+async function appendSubredditGateLog(routeInfo, startedAt, details) {
+  await appendRuntimeLog(buildLog(buildSubredditLogBase(routeInfo, startedAt), {
+    ...details,
+    roundTripMs: Math.round(performance.now() - startedAt)
+  }));
 }
 
 async function reviewCurrentSearchPage() {
@@ -677,6 +858,114 @@ function reviewCurrentUrlBlock() {
   return true;
 }
 
+function applySubredditBlock(reasonText, details = []) {
+  ensureAiOverlay("subreddit-blocked", reasonText, details);
+}
+
+function reviewCurrentSubredditGate() {
+  activeSubredditReviewId += 1;
+  const reviewId = activeSubredditReviewId;
+  const routeInfo = getSubredditRouteInfo();
+
+  if (!currentSettings.enabled || !currentSettings.subredditGateEnabled || !routeInfo?.normalizedName) {
+    return false;
+  }
+
+  ensureAiOverlay("subreddit-loading", "Checking this Reddit community before showing the page.");
+  runSubredditGateReview(reviewId, routeInfo);
+  return true;
+}
+
+async function runSubredditGateReview(reviewId, routeInfo) {
+  const startedAt = performance.now();
+  const allowlist = normalizeSubredditNameList(currentSettings.subredditAllowlist);
+  const blocklist = normalizeSubredditNameList(currentSettings.subredditBlocklist);
+  const keywords = normalizeRuleList(currentSettings.subredditKeywords);
+
+  const finishAllow = async (decisionSource, cacheStatus = "") => {
+    if (reviewId !== activeSubredditReviewId) {
+      return;
+    }
+
+    removeAiOverlay();
+    await appendSubredditGateLog(routeInfo, startedAt, {
+      decision: "allow",
+      decisionCode: "allow",
+      decisionSource,
+      cacheStatus
+    });
+  };
+
+  const finishBlock = async (decisionSource, matchedKeyword, matchedTextSource, matchedText, reason) => {
+    if (reviewId !== activeSubredditReviewId) {
+      return;
+    }
+
+    applySubredditBlock("This community was blocked by the subreddit gate.", [reason]);
+    await appendSubredditGateLog(routeInfo, startedAt, {
+      decision: "block",
+      decisionCode: "block",
+      decisionSource,
+      matchedKeyword,
+      matchedTextSource,
+      matchedText
+    });
+  };
+
+  try {
+    const safeCache = await readSubredditSafeCache();
+    if (safeCache.includes(routeInfo.normalizedName)) {
+      await finishAllow("cache", "subreddit safe cache hit");
+      return;
+    }
+
+    if (allowlist.includes(routeInfo.normalizedName)) {
+      await finishAllow("allowlist");
+      return;
+    }
+
+    if (blocklist.includes(routeInfo.normalizedName)) {
+      await finishBlock("blocklist", routeInfo.normalizedName, "blocklist", routeInfo.normalizedName, `Blocklist: ${routeInfo.normalizedName}`);
+      return;
+    }
+
+    const slugMatch = findSlugKeywordMatch(routeInfo.terms, keywords);
+    if (slugMatch) {
+      await finishBlock("slug keyword", slugMatch.keyword, "slug", slugMatch.text, `Slug keyword: ${slugMatch.keyword}`);
+      return;
+    }
+
+    const header = await waitForSubredditHeader(reviewId);
+    const metadata = getSubredditMetadata(header);
+    const displayNameMatch = findKeywordMatch(metadata.displayName, keywords);
+    if (displayNameMatch) {
+      await finishBlock("display-name keyword", displayNameMatch.keyword, "display-name", displayNameMatch.text, `Display name keyword: ${displayNameMatch.keyword}`);
+      return;
+    }
+
+    const descriptionMatch = findKeywordMatch(metadata.description, keywords);
+    if (descriptionMatch) {
+      await finishBlock("description keyword", descriptionMatch.keyword, "description", descriptionMatch.text, `Description keyword: ${descriptionMatch.keyword}`);
+      return;
+    }
+
+    await writeSubredditSafeCache(routeInfo.normalizedName);
+    await finishAllow(header ? "clean metadata" : "metadata timeout", header ? "stored in subreddit safe cache" : "metadata timeout; stored in subreddit safe cache");
+  } catch (error) {
+    if (reviewId !== activeSubredditReviewId) {
+      return;
+    }
+
+    applySubredditBlock("Subreddit review failed, so this community is blocked.", ["Subreddit gate failure"]);
+    await appendSubredditGateLog(routeInfo, startedAt, {
+      decision: "block",
+      decisionCode: "failure",
+      decisionSource: "failure",
+      failureReason: error.message || String(error)
+    });
+  }
+}
+
 function applyAiVerdict(decision, blockedText, categories = []) {
   if (decision === "allow") {
     removeAiOverlay();
@@ -694,6 +983,9 @@ function reconcileRoute() {
   }
 
   filterDocument();
+  if (reviewCurrentSubredditGate()) {
+    return;
+  }
   if (reviewCurrentUrlBlock()) {
     return;
   }
@@ -792,6 +1084,9 @@ function applySettings(settings) {
   ensureObserver();
   filterDocument();
   if (settingsLoaded) {
+    if (reviewCurrentSubredditGate()) {
+      return;
+    }
     if (reviewCurrentUrlBlock()) {
       return;
     }
