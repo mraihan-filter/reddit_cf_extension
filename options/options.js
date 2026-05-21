@@ -586,12 +586,37 @@ function isImageLikeFile(file) {
   return type.startsWith("image/") || imageExtensions.some((extension) => name.endsWith(extension));
 }
 
+function isAudioLikeFile(file) {
+  const type = (file.type || "").toLowerCase();
+  const name = (file.name || "").toLowerCase();
+  const audioExtensions = [".wav", ".mp3", ".m4a", ".aac", ".ogg", ".flac", ".webm"];
+
+  return type.startsWith("audio/") || audioExtensions.some((extension) => name.endsWith(extension));
+}
+
+function getAudioFormat(file) {
+  const type = (file.type || "").toLowerCase();
+  const name = (file.name || "").toLowerCase();
+
+  if (type.includes("mpeg") || name.endsWith(".mp3")) return "mp3";
+  if (type.includes("mp4") || name.endsWith(".m4a")) return "m4a";
+  if (type.includes("aac") || name.endsWith(".aac")) return "aac";
+  if (type.includes("ogg") || name.endsWith(".ogg")) return "ogg";
+  if (type.includes("flac") || name.endsWith(".flac")) return "flac";
+  if (type.includes("webm") || name.endsWith(".webm")) return "webm";
+  return "wav";
+}
+
+function stripDataUrlPrefix(dataUrl) {
+  return dataUrl.includes(",") ? dataUrl.split(",").slice(1).join(",") : dataUrl;
+}
+
 function getAiLabAttachmentLabel() {
   if (!aiLabImageInput) {
     return "";
   }
 
-  const readable = aiLabImageInput.isImage ? "image" : aiLabImageInput.isText ? "text" : "binary";
+  const readable = aiLabImageInput.isImage ? "image" : aiLabImageInput.isAudio ? "audio" : aiLabImageInput.isText ? "text" : "binary";
   return `${aiLabImageInput.name} | ${aiLabImageInput.type} | ${formatBytes(aiLabImageInput.size)} | ${readable}`;
 }
 
@@ -602,6 +627,8 @@ function getAiLabFileLogFields() {
     fileType: aiLabImageInput?.type || "",
     fileSize: aiLabImageInput?.size || 0,
     fileReadableText: Boolean(aiLabImageInput?.isText),
+    audioAttached: Boolean(aiLabImageInput?.isAudio),
+    audioFormat: aiLabImageInput?.audioFormat || "",
     imageAttached: Boolean(aiLabImageInput?.isImage),
     imageType: aiLabImageInput?.isImage ? aiLabImageInput.type : "",
     imageSize: aiLabImageInput?.isImage ? aiLabImageInput.size : 0
@@ -661,13 +688,15 @@ function renderAiLabImageInput() {
 
   const icon = document.createElement("span");
   icon.className = "lab-file-icon";
-  icon.textContent = aiLabImageInput.isText ? "TXT" : "FILE";
+  icon.textContent = aiLabImageInput.isAudio ? "AUD" : aiLabImageInput.isText ? "TXT" : "FILE";
   const name = document.createElement("strong");
   name.textContent = aiLabImageInput.name;
   const meta = document.createElement("small");
   meta.textContent = `${aiLabImageInput.type} | ${formatBytes(aiLabImageInput.size)}`;
   const mode = document.createElement("small");
-  mode.textContent = aiLabImageInput.isText
+  mode.textContent = aiLabImageInput.isAudio
+    ? `Audio attached as ${aiLabImageInput.audioFormat}. It will be sent to compatible audio-capable models.`
+    : aiLabImageInput.isText
     ? `Readable text attached${aiLabImageInput.truncated ? `, first ${MAX_AI_LAB_TEXT_FILE_CHARS.toLocaleString()} characters included` : ""}.`
     : "Binary file attached as metadata. No readable text content was extracted.";
 
@@ -682,9 +711,11 @@ async function setAiLabImageFromFile(file) {
 
   const type = file.type || "application/octet-stream";
   const isImage = isImageLikeFile(file);
-  const isText = !isImage && isTextLikeFile(file);
+  const isAudio = !isImage && isAudioLikeFile(file);
+  const isText = !isImage && !isAudio && isTextLikeFile(file);
   let text = "";
   let truncated = false;
+  let dataUrl = "";
 
   if (isText) {
     text = await readFileAsText(file);
@@ -692,10 +723,17 @@ async function setAiLabImageFromFile(file) {
     text = text.slice(0, MAX_AI_LAB_TEXT_FILE_CHARS);
   }
 
+  if (isImage || isAudio) {
+    dataUrl = await readFileAsDataUrl(file);
+  }
+
   aiLabImageInput = {
-    dataUrl: isImage ? await readFileAsDataUrl(file) : "",
+    dataUrl,
     isImage,
+    isAudio,
     isText,
+    audioFormat: isAudio ? getAudioFormat(file) : "",
+    audioBase64: isAudio ? stripDataUrlPrefix(dataUrl) : "",
     name: file.name || (isImage ? "clipboard image" : "attached file"),
     size: file.size,
     text,
@@ -756,6 +794,25 @@ function buildAiLabUserMessage(userInput, promptMeta) {
 
   const fallbackText = promptMeta?.inputType === "image" ? "Classify the attached screenshot." : "";
   const baseText = userInput || promptMeta?.defaultUserInput || fallbackText || "Review the attached file.";
+
+  if (aiLabImageInput.isAudio && aiLabImageInput.audioBase64) {
+    return {
+      role: "user",
+      content: [
+        {
+          type: "text",
+          text: baseText
+        },
+        {
+          type: "input_audio",
+          input_audio: {
+            data: aiLabImageInput.audioBase64,
+            format: aiLabImageInput.audioFormat || "wav"
+          }
+        }
+      ]
+    };
+  }
 
   if (!aiLabImageInput.isImage || !aiLabImageInput.dataUrl) {
     const fileText = [
@@ -943,7 +1000,7 @@ function renderSelectedAiLabLog(log) {
     detailCard("Latency", formatLatency(log.latencyMs), ""),
     detailCard("Tokens", summarizeUsage(log.usage), ""),
     detailCard("Cost", formatCost(log.cost), log.responseId ? `Response ID: ${log.responseId}` : ""),
-    detailCard("File input", log.fileAttached || log.imageAttached ? "Attached" : "None", log.fileName ? `${log.fileName} | ${log.fileType || "unknown"} | ${formatBytes(log.fileSize || 0)}` : log.imageType || ""),
+    detailCard("File input", log.fileAttached || log.imageAttached ? "Attached" : "None", log.fileName ? `${log.fileName} | ${log.fileType || "unknown"} | ${formatBytes(log.fileSize || 0)}${log.audioFormat ? ` | audio:${log.audioFormat}` : ""}` : log.imageType || ""),
     detailCard("Timestamp", formatDate(log.timestamp), ""),
     detailCard("User input", log.userInput || "Not recorded", "", true),
     detailCard("Raw output", log.rawOutput || log.error || "Not recorded", "", true)
