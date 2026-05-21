@@ -3,7 +3,7 @@
   "name": "Personal Reddit Content Filter",
   "description": "Personal Reddit page element filter.",
   "version": "0.2.0",
-  "permissions": ["storage", "tabs"],
+  "permissions": ["storage", "tabs", "clipboardRead"],
   "host_permissions": ["https://openrouter.ai/*"],
   "options_page": "options/options.html",
   "background": {
@@ -23,7 +23,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["prompts/search-review-default.md"],
+      "resources": ["prompts/search-review-default.md", "prompts/screenshot-nsfw-classifier.md"],
       "matches": ["*://*.reddit.com/*", "*://reddit.com/*"]
     }
   ],

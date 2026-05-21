@@ -47,6 +47,7 @@ let aiLabPrompts = [];
 let selectedLogId = "";
 let selectedAiLabLogId = "";
 let saveTimer = 0;
+let aiLabImageInput = null;
 
 const status = document.getElementById("status");
 const navItems = Array.from(document.querySelectorAll(".nav-item"));
@@ -85,6 +86,13 @@ const aiLabPromptSelect = document.getElementById("aiLabPromptSelect");
 const aiLabPromptDescription = document.getElementById("aiLabPromptDescription");
 const aiLabUserInput = document.getElementById("aiLabUserInput");
 const aiLabRun = document.getElementById("aiLabRun");
+const aiLabChooseImage = document.getElementById("aiLabChooseImage");
+const aiLabImageFileInput = document.getElementById("aiLabImageFileInput");
+const aiLabPasteImage = document.getElementById("aiLabPasteImage");
+const aiLabClearImage = document.getElementById("aiLabClearImage");
+const aiLabImageDropzone = document.getElementById("aiLabImageDropzone");
+const aiLabImagePreview = document.getElementById("aiLabImagePreview");
+const aiLabImageEmpty = document.getElementById("aiLabImageEmpty");
 const aiLabClearLogs = document.getElementById("aiLabClearLogs");
 const aiLabOutput = document.getElementById("aiLabOutput");
 const aiLabCurrentDetails = document.getElementById("aiLabCurrentDetails");
@@ -230,7 +238,8 @@ function renderAiLabPrompts() {
 
 function updateAiLabPromptDescription() {
   const selected = aiLabPrompts.find((prompt) => prompt.path === aiLabPromptSelect.value);
-  aiLabPromptDescription.textContent = selected?.description || "";
+  const inputHint = selected?.inputType === "image" ? " Requires an attached image." : "";
+  aiLabPromptDescription.textContent = `${selected?.description || ""}${inputHint}`;
 }
 
 function readSettingsFromControls(changedKey, checked) {
@@ -445,6 +454,10 @@ function updateDisabledState() {
 
   apiKeyInput.disabled = !extensionEnabled;
   modelInput.disabled = !extensionEnabled;
+  aiLabChooseImage.disabled = !extensionEnabled;
+  aiLabPasteImage.disabled = !extensionEnabled;
+  aiLabImageFileInput.disabled = !extensionEnabled;
+  aiLabClearImage.disabled = !extensionEnabled || !aiLabImageInput;
   blockedUrlPrefixInput.disabled = !extensionEnabled;
   addBlockedUrlPrefix.disabled = !extensionEnabled;
   blockedExactUrlInput.disabled = !extensionEnabled;
@@ -456,6 +469,104 @@ function updateDisabledState() {
   subredditKeywordInput.disabled = !extensionEnabled || !currentSettings.subredditGateEnabled;
   addSubredditKeyword.disabled = !extensionEnabled || !currentSettings.subredditGateEnabled;
   clearSubredditSafeCache.disabled = !extensionEnabled || !currentSettings.subredditGateEnabled;
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(String(reader.result || "")));
+    reader.addEventListener("error", () => reject(reader.error || new Error("Image read failed")));
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderAiLabImageInput() {
+  const hasImage = Boolean(aiLabImageInput?.dataUrl);
+  aiLabImagePreview.hidden = !hasImage;
+  aiLabImageEmpty.hidden = hasImage;
+  aiLabClearImage.disabled = !currentSettings.enabled || !hasImage;
+
+  if (!hasImage) {
+    aiLabImagePreview.removeAttribute("src");
+    aiLabImageEmpty.textContent = "No image attached. Drop an image here or choose a file.";
+    return;
+  }
+
+  aiLabImagePreview.src = aiLabImageInput.dataUrl;
+  aiLabImageEmpty.textContent = "";
+}
+
+async function setAiLabImageFromFile(file) {
+  if (!file || !file.type.startsWith("image/")) {
+    setStatus("Selected file is not an image");
+    return;
+  }
+
+  aiLabImageInput = {
+    dataUrl: await readFileAsDataUrl(file),
+    type: file.type,
+    size: file.size,
+    name: file.name || "clipboard image"
+  };
+  renderAiLabImageInput();
+  setStatus(`AI Lab image attached: ${aiLabImageInput.name}`);
+}
+
+async function chooseAiLabImageFromFilePicker() {
+  aiLabImageFileInput.click();
+}
+
+async function pasteAiLabImageFromClipboard() {
+  if (!navigator.clipboard?.read) {
+    setStatus("Clipboard image read is not available in this browser");
+    return;
+  }
+
+  try {
+    const items = await navigator.clipboard.read();
+
+    for (const item of items) {
+      const imageType = item.types.find((type) => type.startsWith("image/"));
+
+      if (imageType) {
+        const blob = await item.getType(imageType);
+        await setAiLabImageFromFile(blob);
+        return;
+      }
+    }
+
+    setStatus("Clipboard does not contain an image");
+  } catch (error) {
+    setStatus(`Clipboard image paste failed: ${error.message || error}`);
+  }
+}
+
+function clearAiLabImageInput() {
+  aiLabImageInput = null;
+  renderAiLabImageInput();
+  setStatus("AI Lab image cleared");
+}
+
+function buildAiLabUserMessage(userInput, promptMeta) {
+  if (!aiLabImageInput?.dataUrl) {
+    return { role: "user", content: userInput };
+  }
+
+  return {
+    role: "user",
+    content: [
+      {
+        type: "text",
+        text: userInput || promptMeta?.defaultUserInput || "Classify the attached screenshot."
+      },
+      {
+        type: "image_url",
+        image_url: {
+          url: aiLabImageInput.dataUrl
+        }
+      }
+    ]
+  };
 }
 
 function formatDate(timestamp) {
@@ -584,6 +695,7 @@ function renderAiLabCurrentRun(log) {
     detailCard("Status", log.error ? "Error" : "Run complete", ""),
     detailCard("Latency", formatLatency(log.latencyMs), ""),
     detailCard("Model", log.model || "Not recorded", ""),
+    detailCard("Image", log.imageAttached ? "Attached" : "None", log.imageType || ""),
     detailCard("Tokens", summarizeUsage(log.usage), ""),
     detailCard("Cost", formatCost(log.cost), ""),
     detailCard("Timestamp", formatDate(log.timestamp), "")
@@ -604,6 +716,7 @@ function renderSelectedAiLabLog(log) {
     detailCard("Latency", formatLatency(log.latencyMs), ""),
     detailCard("Tokens", summarizeUsage(log.usage), ""),
     detailCard("Cost", formatCost(log.cost), log.responseId ? `Response ID: ${log.responseId}` : ""),
+    detailCard("Image input", log.imageAttached ? "Attached" : "None", log.imageType ? `${log.imageType} | ${log.imageSize || 0} bytes` : ""),
     detailCard("Timestamp", formatDate(log.timestamp), ""),
     detailCard("User input", log.userInput || "Not recorded", "", true),
     detailCard("Raw output", log.rawOutput || log.error || "Not recorded", "", true)
@@ -788,8 +901,18 @@ async function runAiLabRequest() {
     return;
   }
 
-  if (!model || !promptPath || !userInput) {
-    setStatus("AI Lab requires a model, prompt, and user input");
+  if (!model || !promptPath) {
+    setStatus("AI Lab requires a model and prompt");
+    return;
+  }
+
+  if (promptMeta?.inputType === "image" && !aiLabImageInput?.dataUrl) {
+    setStatus("Selected prompt requires an attached image");
+    return;
+  }
+
+  if (!userInput && !aiLabImageInput?.dataUrl) {
+    setStatus("AI Lab requires user input or an attached image");
     return;
   }
 
@@ -808,7 +931,10 @@ async function runAiLabRequest() {
     promptPath,
     promptLabel: promptMeta?.label || promptPath,
     userInput,
-    inputPreview: userInput.slice(0, 80),
+    inputPreview: userInput.slice(0, 80) || (aiLabImageInput ? "Attached image" : ""),
+    imageAttached: Boolean(aiLabImageInput?.dataUrl),
+    imageType: aiLabImageInput?.type || "",
+    imageSize: aiLabImageInput?.size || 0,
     latencyMs: 0,
     usage: {},
     cost: null,
@@ -826,7 +952,7 @@ async function runAiLabRequest() {
         model,
         messages: [
           { role: "system", content: prompt },
-          { role: "user", content: userInput }
+          buildAiLabUserMessage(userInput, promptMeta)
         ],
         temperature: 0
       })
@@ -935,6 +1061,7 @@ async function init() {
   renderLogs();
   renderAiLabLogs();
   renderAiLabCurrentRun(aiLabLogs[0]);
+  renderAiLabImageInput();
   if (aiLabLogs[0]) {
     aiLabOutput.textContent = aiLabLogs[0].rawOutput || aiLabLogs[0].error || "No output recorded.";
   }
@@ -1027,6 +1154,59 @@ async function init() {
   });
   aiLabUserInput.addEventListener("input", () => {
     saveAiLabSettings({ userInput: aiLabUserInput.value });
+  });
+  aiLabPasteImage.addEventListener("click", pasteAiLabImageFromClipboard);
+  aiLabChooseImage.addEventListener("click", chooseAiLabImageFromFilePicker);
+  aiLabImageFileInput.addEventListener("change", async () => {
+    const file = aiLabImageFileInput.files?.[0];
+
+    if (file) {
+      await setAiLabImageFromFile(file);
+    }
+
+    aiLabImageFileInput.value = "";
+  });
+  aiLabClearImage.addEventListener("click", clearAiLabImageInput);
+  aiLabImageDropzone.addEventListener("click", chooseAiLabImageFromFilePicker);
+  aiLabImageDropzone.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      chooseAiLabImageFromFilePicker();
+    }
+  });
+  aiLabImageDropzone.addEventListener("dragenter", (event) => {
+    event.preventDefault();
+    aiLabImageDropzone.classList.add("drag-over");
+  });
+  aiLabImageDropzone.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    aiLabImageDropzone.classList.add("drag-over");
+  });
+  aiLabImageDropzone.addEventListener("dragleave", (event) => {
+    if (!aiLabImageDropzone.contains(event.relatedTarget)) {
+      aiLabImageDropzone.classList.remove("drag-over");
+    }
+  });
+  aiLabImageDropzone.addEventListener("drop", async (event) => {
+    event.preventDefault();
+    aiLabImageDropzone.classList.remove("drag-over");
+
+    const file = Array.from(event.dataTransfer?.files || []).find((entry) => entry.type.startsWith("image/"));
+
+    if (!file) {
+      setStatus("Dropped files did not include an image");
+      return;
+    }
+
+    await setAiLabImageFromFile(file);
+  });
+  aiLabImageDropzone.addEventListener("paste", async (event) => {
+    const file = Array.from(event.clipboardData?.files || []).find((entry) => entry.type.startsWith("image/"));
+
+    if (file) {
+      event.preventDefault();
+      await setAiLabImageFromFile(file);
+    }
   });
   aiLabRun.addEventListener("click", runAiLabRequest);
   aiLabClearLogs.addEventListener("click", clearAiLabLogs);

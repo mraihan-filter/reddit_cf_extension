@@ -3,5 +3,11 @@
     "label": "Search review default",
     "path": "prompts/search-review-default.md",
     "description": "Current Reddit search review prompt."
+  },
+  {
+    "label": "Screenshot NSFW classifier",
+    "path": "prompts/screenshot-nsfw-classifier.md",
+    "description": "Classifies an input screenshot as NSFW with a true or false response.",
+    "inputType": "image"
   }
 ]

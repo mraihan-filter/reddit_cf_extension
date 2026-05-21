@@ -255,6 +255,25 @@
                 <textarea id="aiLabUserInput" spellcheck="false" rows="6"></textarea>
               </label>
 
+              <div class="lab-input-card">
+                <div class="lab-image-header">
+                  <div>
+                    <strong>Image input</strong>
+                    <small>Paste, choose, or drop an image file for image prompts.</small>
+                  </div>
+                  <div class="lab-image-actions">
+                    <button id="aiLabChooseImage" type="button">Choose file</button>
+                    <button id="aiLabPasteImage" type="button">Paste image</button>
+                    <button id="aiLabClearImage" type="button" disabled>Clear</button>
+                  </div>
+                </div>
+                <input id="aiLabImageFileInput" type="file" hidden>
+                <div id="aiLabImageDropzone" class="lab-image-dropzone" tabindex="0" role="button" aria-label="Choose, paste, or drop an image file">
+                  <img id="aiLabImagePreview" alt="AI Lab image input preview" hidden>
+                  <span id="aiLabImageEmpty">No image attached. Drop an image here or choose a file.</span>
+                </div>
+              </div>
+
               <div id="aiLabCurrentDetails" class="detail-grid lab-current-details"></div>
 
               <div>
