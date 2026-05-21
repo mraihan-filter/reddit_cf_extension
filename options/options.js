@@ -579,6 +579,44 @@ function getAiLabAttachmentLabel() {
   return `${aiLabImageInput.name} | ${aiLabImageInput.type} | ${formatBytes(aiLabImageInput.size)} | ${readable}`;
 }
 
+function getAiLabFileLogFields() {
+  return {
+    fileAttached: Boolean(aiLabImageInput),
+    fileName: aiLabImageInput?.name || "",
+    fileType: aiLabImageInput?.type || "",
+    fileSize: aiLabImageInput?.size || 0,
+    fileReadableText: Boolean(aiLabImageInput?.isText),
+    imageAttached: Boolean(aiLabImageInput?.isImage),
+    imageType: aiLabImageInput?.isImage ? aiLabImageInput.type : "",
+    imageSize: aiLabImageInput?.isImage ? aiLabImageInput.size : 0
+  };
+}
+
+function showAiLabValidationError(message) {
+  const promptPath = aiLabPromptSelect.value;
+  const promptMeta = aiLabPrompts.find((prompt) => prompt.path === promptPath);
+  const log = {
+    id: `validation-${Date.now()}`,
+    timestamp: Date.now(),
+    model: aiLabModelSelect.value || "Not selected",
+    promptPath,
+    promptLabel: promptMeta?.label || promptPath || "Not selected",
+    userInput: aiLabUserInput.value.trim(),
+    inputPreview: aiLabUserInput.value.trim().slice(0, 80) || aiLabImageInput?.name || "Validation failed",
+    latencyMs: 0,
+    usage: {},
+    cost: null,
+    responseId: "",
+    rawOutput: "",
+    error: message,
+    ...getAiLabFileLogFields()
+  };
+
+  aiLabOutput.textContent = message;
+  renderAiLabCurrentRun(log);
+  setStatus(message);
+}
+
 function renderAiLabImageInput() {
   const hasAttachment = Boolean(aiLabImageInput);
   const hasImage = Boolean(aiLabImageInput?.isImage && aiLabImageInput?.dataUrl);
@@ -646,6 +684,14 @@ async function setAiLabImageFromFile(file) {
     type
   };
   renderAiLabImageInput();
+
+  const promptMeta = aiLabPrompts.find((prompt) => prompt.path === aiLabPromptSelect.value);
+
+  if (promptMeta?.inputType === "image" && !isImage) {
+    showAiLabValidationError(`Attached ${type} file, but "${promptMeta.label}" requires an image file.`);
+    return;
+  }
+
   setStatus(`AI Lab file attached: ${getAiLabAttachmentLabel()}`);
 }
 
@@ -1059,22 +1105,23 @@ async function runAiLabRequest() {
   const startedAt = performance.now();
 
   if (!apiKey) {
-    setStatus("OpenRouter API key is required in AI Gate");
+    showAiLabValidationError("OpenRouter API key is required in AI Gate");
     return;
   }
 
   if (!model || !promptPath) {
-    setStatus("AI Lab requires a model and prompt");
+    showAiLabValidationError("AI Lab requires a model and prompt");
     return;
   }
 
   if (promptMeta?.inputType === "image" && !aiLabImageInput?.isImage) {
-    setStatus("Selected prompt requires an attached image file");
+    const attachedType = aiLabImageInput?.type ? ` Attached file type: ${aiLabImageInput.type}.` : "";
+    showAiLabValidationError(`Selected prompt requires an attached image file.${attachedType}`);
     return;
   }
 
   if (!userInput && !aiLabImageInput) {
-    setStatus("AI Lab requires user input or an attached file");
+    showAiLabValidationError("AI Lab requires user input or an attached file");
     return;
   }
 
@@ -1094,14 +1141,7 @@ async function runAiLabRequest() {
     promptLabel: promptMeta?.label || promptPath,
     userInput,
     inputPreview: userInput.slice(0, 80) || (aiLabImageInput ? aiLabImageInput.name : ""),
-    fileAttached: Boolean(aiLabImageInput),
-    fileName: aiLabImageInput?.name || "",
-    fileType: aiLabImageInput?.type || "",
-    fileSize: aiLabImageInput?.size || 0,
-    fileReadableText: Boolean(aiLabImageInput?.isText),
-    imageAttached: Boolean(aiLabImageInput?.isImage),
-    imageType: aiLabImageInput?.isImage ? aiLabImageInput.type : "",
-    imageSize: aiLabImageInput?.isImage ? aiLabImageInput.size : 0,
+    ...getAiLabFileLogFields(),
     latencyMs: 0,
     usage: {},
     cost: null,
