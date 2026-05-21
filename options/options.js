@@ -9,6 +9,7 @@ const PROMPT_INDEX_PATH = "prompts/index.json";
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const MAX_AI_LAB_LOGS = 100;
 const MAX_AI_LAB_TEXT_FILE_CHARS = 12000;
+const AI_LAB_CUSTOM_PROMPT_VALUE = "__custom_system_prompt__";
 
 const DEFAULT_SETTINGS = {
   enabled: true,
@@ -221,6 +222,11 @@ function renderAiLabModelTags() {
 function renderAiLabPrompts() {
   aiLabPromptSelect.textContent = "";
 
+  const customOption = document.createElement("option");
+  customOption.value = AI_LAB_CUSTOM_PROMPT_VALUE;
+  customOption.textContent = "Custom system prompt";
+  aiLabPromptSelect.append(customOption);
+
   for (const prompt of aiLabPrompts) {
     const option = document.createElement("option");
     option.value = prompt.path;
@@ -235,16 +241,22 @@ function renderAiLabPrompts() {
     aiLabPromptSelect.append(option);
   }
 
-  const promptExists = aiLabPrompts.some((prompt) => prompt.path === aiLabSettings.selectedPromptPath);
-  aiLabPromptSelect.value = promptExists ? aiLabSettings.selectedPromptPath : aiLabPrompts[0]?.path || "";
+  const promptExists =
+    aiLabSettings.selectedPromptPath === AI_LAB_CUSTOM_PROMPT_VALUE ||
+    aiLabPrompts.some((prompt) => prompt.path === aiLabSettings.selectedPromptPath);
+  aiLabPromptSelect.value = promptExists ? aiLabSettings.selectedPromptPath : aiLabPrompts[0]?.path || AI_LAB_CUSTOM_PROMPT_VALUE;
   updateAiLabPromptDescription();
 }
 
 function updateAiLabPromptDescription() {
+  if (aiLabPromptSelect.value === AI_LAB_CUSTOM_PROMPT_VALUE) {
+    aiLabPromptDescription.textContent = "Uses only the custom system prompt below. Bundled .md prompts and their input requirements are ignored.";
+    return;
+  }
+
   const selected = aiLabPrompts.find((prompt) => prompt.path === aiLabPromptSelect.value);
   const inputHint = selected?.inputType === "image" ? " Requires an attached image." : "";
-  const overrideHint = aiLabCustomSystemPrompt.value.trim() ? " Custom system prompt override is active." : "";
-  aiLabPromptDescription.textContent = `${selected?.description || ""}${inputHint}${overrideHint}`;
+  aiLabPromptDescription.textContent = `${selected?.description || ""}${inputHint}`;
 }
 
 function readSettingsFromControls(changedKey, checked) {
@@ -694,7 +706,7 @@ async function setAiLabImageFromFile(file) {
 
   const promptMeta = aiLabPrompts.find((prompt) => prompt.path === aiLabPromptSelect.value);
 
-  if (!aiLabCustomSystemPrompt.value.trim() && promptMeta?.inputType === "image" && !isImage) {
+  if (aiLabPromptSelect.value !== AI_LAB_CUSTOM_PROMPT_VALUE && promptMeta?.inputType === "image" && !isImage) {
     showAiLabValidationError(`Attached ${type} file, but "${promptMeta.label}" requires an image file.`);
     return;
   }
@@ -1110,7 +1122,7 @@ async function runAiLabRequest() {
   const promptMeta = aiLabPrompts.find((prompt) => prompt.path === promptPath);
   const userInput = aiLabUserInput.value.trim();
   const customSystemPrompt = aiLabCustomSystemPrompt.value.trim();
-  const usesCustomSystemPrompt = Boolean(customSystemPrompt);
+  const usesCustomSystemPrompt = promptPath === AI_LAB_CUSTOM_PROMPT_VALUE;
   const startedAt = performance.now();
 
   if (!apiKey) {
@@ -1120,6 +1132,11 @@ async function runAiLabRequest() {
 
   if (!model || !promptPath) {
     showAiLabValidationError("AI Lab requires a model and prompt");
+    return;
+  }
+
+  if (usesCustomSystemPrompt && !customSystemPrompt) {
+    showAiLabValidationError("Custom system prompt is selected, but the custom system prompt field is empty");
     return;
   }
 
