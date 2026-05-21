@@ -35,7 +35,8 @@ const DEFAULT_AI_LAB_SETTINGS = {
   models: ["google/gemini-2.5-flash-lite"],
   selectedModel: "google/gemini-2.5-flash-lite",
   selectedPromptPath: "prompts/search-review-default.md",
-  userInput: ""
+  userInput: "",
+  customSystemPrompt: ""
 };
 
 let currentSettings = { ...DEFAULT_SETTINGS };
@@ -85,6 +86,7 @@ const aiLabAddModel = document.getElementById("aiLabAddModel");
 const aiLabModelTags = document.getElementById("aiLabModelTags");
 const aiLabPromptSelect = document.getElementById("aiLabPromptSelect");
 const aiLabPromptDescription = document.getElementById("aiLabPromptDescription");
+const aiLabCustomSystemPrompt = document.getElementById("aiLabCustomSystemPrompt");
 const aiLabUserInput = document.getElementById("aiLabUserInput");
 const aiLabRun = document.getElementById("aiLabRun");
 const aiLabChooseImage = document.getElementById("aiLabChooseImage");
@@ -185,6 +187,7 @@ function renderAiLabSettings(settings) {
 
   aiLabModelSelect.value = aiLabSettings.selectedModel;
   aiLabUserInput.value = aiLabSettings.userInput || "";
+  aiLabCustomSystemPrompt.value = aiLabSettings.customSystemPrompt || "";
   renderAiLabModelTags();
   renderAiLabPrompts();
 }
@@ -240,7 +243,8 @@ function renderAiLabPrompts() {
 function updateAiLabPromptDescription() {
   const selected = aiLabPrompts.find((prompt) => prompt.path === aiLabPromptSelect.value);
   const inputHint = selected?.inputType === "image" ? " Requires an attached image." : "";
-  aiLabPromptDescription.textContent = `${selected?.description || ""}${inputHint}`;
+  const overrideHint = aiLabCustomSystemPrompt.value.trim() ? " Custom system prompt override is active." : "";
+  aiLabPromptDescription.textContent = `${selected?.description || ""}${inputHint}${overrideHint}`;
 }
 
 function readSettingsFromControls(changedKey, checked) {
@@ -643,6 +647,9 @@ function renderAiLabImageInput() {
   aiLabImageEmpty.className = "lab-file-summary";
   aiLabImageEmpty.innerHTML = "";
 
+  const icon = document.createElement("span");
+  icon.className = "lab-file-icon";
+  icon.textContent = aiLabImageInput.isText ? "TXT" : "FILE";
   const name = document.createElement("strong");
   name.textContent = aiLabImageInput.name;
   const meta = document.createElement("small");
@@ -652,7 +659,7 @@ function renderAiLabImageInput() {
     ? `Readable text attached${aiLabImageInput.truncated ? `, first ${MAX_AI_LAB_TEXT_FILE_CHARS.toLocaleString()} characters included` : ""}.`
     : "Binary file attached as metadata. No readable text content was extracted.";
 
-  aiLabImageEmpty.append(name, meta, mode);
+  aiLabImageEmpty.append(icon, name, meta, mode);
 }
 
 async function setAiLabImageFromFile(file) {
@@ -687,7 +694,7 @@ async function setAiLabImageFromFile(file) {
 
   const promptMeta = aiLabPrompts.find((prompt) => prompt.path === aiLabPromptSelect.value);
 
-  if (promptMeta?.inputType === "image" && !isImage) {
+  if (!aiLabCustomSystemPrompt.value.trim() && promptMeta?.inputType === "image" && !isImage) {
     showAiLabValidationError(`Attached ${type} file, but "${promptMeta.label}" requires an image file.`);
     return;
   }
@@ -920,7 +927,7 @@ function renderSelectedAiLabLog(log) {
 
   const cards = [
     detailCard("Model", log.model || "Not recorded", ""),
-    detailCard("Prompt", log.promptLabel || "Not recorded", log.promptPath || ""),
+    detailCard("Prompt", log.promptLabel || "Not recorded", log.promptSource === "custom" ? "Custom system prompt override" : log.promptPath || ""),
     detailCard("Latency", formatLatency(log.latencyMs), ""),
     detailCard("Tokens", summarizeUsage(log.usage), ""),
     detailCard("Cost", formatCost(log.cost), log.responseId ? `Response ID: ${log.responseId}` : ""),
@@ -1102,6 +1109,8 @@ async function runAiLabRequest() {
   const promptPath = aiLabPromptSelect.value;
   const promptMeta = aiLabPrompts.find((prompt) => prompt.path === promptPath);
   const userInput = aiLabUserInput.value.trim();
+  const customSystemPrompt = aiLabCustomSystemPrompt.value.trim();
+  const usesCustomSystemPrompt = Boolean(customSystemPrompt);
   const startedAt = performance.now();
 
   if (!apiKey) {
@@ -1114,7 +1123,7 @@ async function runAiLabRequest() {
     return;
   }
 
-  if (promptMeta?.inputType === "image" && !aiLabImageInput?.isImage) {
+  if (!usesCustomSystemPrompt && promptMeta?.inputType === "image" && !aiLabImageInput?.isImage) {
     const attachedType = aiLabImageInput?.type ? ` Attached file type: ${aiLabImageInput.type}.` : "";
     showAiLabValidationError(`Selected prompt requires an attached image file.${attachedType}`);
     return;
@@ -1130,7 +1139,8 @@ async function runAiLabRequest() {
   await saveAiLabSettings({
     selectedModel: model,
     selectedPromptPath: promptPath,
-    userInput
+    userInput,
+    customSystemPrompt
   });
 
   const baseLog = {
@@ -1138,7 +1148,8 @@ async function runAiLabRequest() {
     timestamp: Date.now(),
     model,
     promptPath,
-    promptLabel: promptMeta?.label || promptPath,
+    promptLabel: usesCustomSystemPrompt ? "Custom system prompt" : promptMeta?.label || promptPath,
+    promptSource: usesCustomSystemPrompt ? "custom" : "bundled",
     userInput,
     inputPreview: userInput.slice(0, 80) || (aiLabImageInput ? aiLabImageInput.name : ""),
     ...getAiLabFileLogFields(),
@@ -1151,7 +1162,7 @@ async function runAiLabRequest() {
   };
 
   try {
-    const prompt = await fetchPrompt(promptPath);
+    const prompt = usesCustomSystemPrompt ? customSystemPrompt : await fetchPrompt(promptPath);
     const response = await fetch(OPENROUTER_ENDPOINT, {
       method: "POST",
       headers: buildOpenRouterHeaders(apiKey),
@@ -1361,6 +1372,10 @@ async function init() {
   });
   aiLabUserInput.addEventListener("input", () => {
     saveAiLabSettings({ userInput: aiLabUserInput.value });
+  });
+  aiLabCustomSystemPrompt.addEventListener("input", () => {
+    saveAiLabSettings({ customSystemPrompt: aiLabCustomSystemPrompt.value });
+    updateAiLabPromptDescription();
   });
   aiLabPasteImage.addEventListener("click", pasteAiLabImageFromClipboard);
   aiLabChooseImage.addEventListener("click", chooseAiLabImageFromFilePicker);

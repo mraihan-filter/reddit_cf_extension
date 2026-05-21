@@ -386,11 +386,31 @@ input[type="checkbox"]:disabled {
   object-fit: contain;
 }
 
+.lab-image-dropzone img[hidden] {
+  display: none;
+}
+
 .lab-file-summary {
+  align-items: center;
   display: grid;
   gap: 8px;
   max-width: 100%;
   text-align: center;
+}
+
+.lab-file-icon {
+  align-items: center;
+  background: #17212a;
+  border: 1px solid #33404a;
+  border-radius: 10px;
+  color: #ff6040;
+  display: inline-flex;
+  font-size: 20px;
+  font-weight: 800;
+  height: 44px;
+  justify-content: center;
+  justify-self: center;
+  width: 44px;
 }
 
 .lab-file-summary strong {
