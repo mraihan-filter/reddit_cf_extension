@@ -8,6 +8,7 @@ const SUBREDDIT_SAFE_CACHE_KEY = "redditContentFilterSubredditSafeCache";
 const PROMPT_INDEX_PATH = "prompts/index.json";
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const MAX_AI_LAB_LOGS = 100;
+const MAX_AI_LAB_TEXT_FILE_CHARS = 12000;
 
 const DEFAULT_SETTINGS = {
   enabled: true,
@@ -475,41 +476,177 @@ function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.addEventListener("load", () => resolve(String(reader.result || "")));
-    reader.addEventListener("error", () => reject(reader.error || new Error("Image read failed")));
+    reader.addEventListener("error", () => reject(reader.error || new Error("File read failed")));
     reader.readAsDataURL(file);
   });
 }
 
+function readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(String(reader.result || "")));
+    reader.addEventListener("error", () => reject(reader.error || new Error("Text file read failed")));
+    reader.readAsText(file);
+  });
+}
+
+function formatBytes(value) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return "0 bytes";
+  }
+
+  const units = ["bytes", "KB", "MB", "GB"];
+  let size = value;
+  let unitIndex = 0;
+
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex += 1;
+  }
+
+  return `${size.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+}
+
+function isTextLikeFile(file) {
+  const type = (file.type || "").toLowerCase();
+  const name = (file.name || "").toLowerCase();
+  const textExtensions = [
+    ".txt",
+    ".md",
+    ".markdown",
+    ".json",
+    ".jsonl",
+    ".csv",
+    ".tsv",
+    ".xml",
+    ".html",
+    ".htm",
+    ".css",
+    ".js",
+    ".mjs",
+    ".cjs",
+    ".ts",
+    ".tsx",
+    ".jsx",
+    ".py",
+    ".rb",
+    ".php",
+    ".java",
+    ".c",
+    ".cpp",
+    ".h",
+    ".hpp",
+    ".cs",
+    ".go",
+    ".rs",
+    ".sh",
+    ".bat",
+    ".ps1",
+    ".yaml",
+    ".yml",
+    ".ini",
+    ".toml",
+    ".env",
+    ".log",
+    ".svg"
+  ];
+
+  return (
+    type.startsWith("text/") ||
+    type.includes("json") ||
+    type.includes("xml") ||
+    type.includes("javascript") ||
+    type.includes("csv") ||
+    type.includes("yaml") ||
+    textExtensions.some((extension) => name.endsWith(extension))
+  );
+}
+
+function isImageLikeFile(file) {
+  const type = (file.type || "").toLowerCase();
+  const name = (file.name || "").toLowerCase();
+  const imageExtensions = [".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".avif", ".svg"];
+
+  return type.startsWith("image/") || imageExtensions.some((extension) => name.endsWith(extension));
+}
+
+function getAiLabAttachmentLabel() {
+  if (!aiLabImageInput) {
+    return "";
+  }
+
+  const readable = aiLabImageInput.isImage ? "image" : aiLabImageInput.isText ? "text" : "binary";
+  return `${aiLabImageInput.name} | ${aiLabImageInput.type} | ${formatBytes(aiLabImageInput.size)} | ${readable}`;
+}
+
 function renderAiLabImageInput() {
-  const hasImage = Boolean(aiLabImageInput?.dataUrl);
+  const hasAttachment = Boolean(aiLabImageInput);
+  const hasImage = Boolean(aiLabImageInput?.isImage && aiLabImageInput?.dataUrl);
   aiLabImagePreview.hidden = !hasImage;
   aiLabImageEmpty.hidden = hasImage;
-  aiLabClearImage.disabled = !currentSettings.enabled || !hasImage;
+  aiLabClearImage.disabled = !currentSettings.enabled || !hasAttachment;
 
-  if (!hasImage) {
+  if (!hasAttachment) {
     aiLabImagePreview.removeAttribute("src");
-    aiLabImageEmpty.textContent = "No image attached. Drop an image here or choose a file.";
+    aiLabImageEmpty.className = "";
+    aiLabImageEmpty.textContent = "No file attached. Drop a file here or choose one.";
     return;
   }
 
-  aiLabImagePreview.src = aiLabImageInput.dataUrl;
-  aiLabImageEmpty.textContent = "";
+  if (hasImage) {
+    aiLabImagePreview.src = aiLabImageInput.dataUrl;
+    aiLabImageEmpty.className = "";
+    aiLabImageEmpty.textContent = "";
+    return;
+  }
+
+  aiLabImagePreview.removeAttribute("src");
+  aiLabImageEmpty.hidden = false;
+  aiLabImageEmpty.className = "lab-file-summary";
+  aiLabImageEmpty.innerHTML = "";
+
+  const name = document.createElement("strong");
+  name.textContent = aiLabImageInput.name;
+  const meta = document.createElement("small");
+  meta.textContent = `${aiLabImageInput.type} | ${formatBytes(aiLabImageInput.size)}`;
+  const mode = document.createElement("small");
+  mode.textContent = aiLabImageInput.isText
+    ? `Readable text attached${aiLabImageInput.truncated ? `, first ${MAX_AI_LAB_TEXT_FILE_CHARS.toLocaleString()} characters included` : ""}.`
+    : "Binary file attached as metadata. No readable text content was extracted.";
+
+  aiLabImageEmpty.append(name, meta, mode);
 }
 
 async function setAiLabImageFromFile(file) {
-  if (!file || !file.type.startsWith("image/")) {
-    setStatus("Selected file is not an image");
+  if (!file) {
+    setStatus("No file selected");
     return;
   }
 
+  const type = file.type || "application/octet-stream";
+  const isImage = isImageLikeFile(file);
+  const isText = !isImage && isTextLikeFile(file);
+  let text = "";
+  let truncated = false;
+
+  if (isText) {
+    text = await readFileAsText(file);
+    truncated = text.length > MAX_AI_LAB_TEXT_FILE_CHARS;
+    text = text.slice(0, MAX_AI_LAB_TEXT_FILE_CHARS);
+  }
+
   aiLabImageInput = {
-    dataUrl: await readFileAsDataUrl(file),
-    type: file.type,
+    dataUrl: isImage ? await readFileAsDataUrl(file) : "",
+    isImage,
+    isText,
+    name: file.name || (isImage ? "clipboard image" : "attached file"),
     size: file.size,
-    name: file.name || "clipboard image"
+    text,
+    truncated,
+    type
   };
   renderAiLabImageInput();
-  setStatus(`AI Lab image attached: ${aiLabImageInput.name}`);
+  setStatus(`AI Lab file attached: ${getAiLabAttachmentLabel()}`);
 }
 
 async function chooseAiLabImageFromFilePicker() {
@@ -544,12 +681,37 @@ async function pasteAiLabImageFromClipboard() {
 function clearAiLabImageInput() {
   aiLabImageInput = null;
   renderAiLabImageInput();
-  setStatus("AI Lab image cleared");
+  setStatus("AI Lab file cleared");
 }
 
 function buildAiLabUserMessage(userInput, promptMeta) {
-  if (!aiLabImageInput?.dataUrl) {
+  if (!aiLabImageInput) {
     return { role: "user", content: userInput };
+  }
+
+  const fallbackText = promptMeta?.inputType === "image" ? "Classify the attached screenshot." : "";
+  const baseText = userInput || promptMeta?.defaultUserInput || fallbackText || "Review the attached file.";
+
+  if (!aiLabImageInput.isImage || !aiLabImageInput.dataUrl) {
+    const fileText = [
+      baseText,
+      "",
+      "Attached file metadata:",
+      `Name: ${aiLabImageInput.name}`,
+      `Type: ${aiLabImageInput.type}`,
+      `Size: ${aiLabImageInput.size} bytes`
+    ];
+
+    if (aiLabImageInput.isText) {
+      fileText.push(
+        `Text content${aiLabImageInput.truncated ? ` (truncated to ${MAX_AI_LAB_TEXT_FILE_CHARS} characters)` : ""}:`,
+        aiLabImageInput.text || "[empty file]"
+      );
+    } else {
+      fileText.push("No readable text content was extracted from this binary file.");
+    }
+
+    return { role: "user", content: fileText.join("\n") };
   }
 
   return {
@@ -557,7 +719,7 @@ function buildAiLabUserMessage(userInput, promptMeta) {
     content: [
       {
         type: "text",
-        text: userInput || promptMeta?.defaultUserInput || "Classify the attached screenshot."
+        text: baseText
       },
       {
         type: "image_url",
@@ -695,7 +857,7 @@ function renderAiLabCurrentRun(log) {
     detailCard("Status", log.error ? "Error" : "Run complete", ""),
     detailCard("Latency", formatLatency(log.latencyMs), ""),
     detailCard("Model", log.model || "Not recorded", ""),
-    detailCard("Image", log.imageAttached ? "Attached" : "None", log.imageType || ""),
+    detailCard("File", log.fileAttached || log.imageAttached ? "Attached" : "None", log.fileType || log.imageType || ""),
     detailCard("Tokens", summarizeUsage(log.usage), ""),
     detailCard("Cost", formatCost(log.cost), ""),
     detailCard("Timestamp", formatDate(log.timestamp), "")
@@ -716,7 +878,7 @@ function renderSelectedAiLabLog(log) {
     detailCard("Latency", formatLatency(log.latencyMs), ""),
     detailCard("Tokens", summarizeUsage(log.usage), ""),
     detailCard("Cost", formatCost(log.cost), log.responseId ? `Response ID: ${log.responseId}` : ""),
-    detailCard("Image input", log.imageAttached ? "Attached" : "None", log.imageType ? `${log.imageType} | ${log.imageSize || 0} bytes` : ""),
+    detailCard("File input", log.fileAttached || log.imageAttached ? "Attached" : "None", log.fileName ? `${log.fileName} | ${log.fileType || "unknown"} | ${formatBytes(log.fileSize || 0)}` : log.imageType || ""),
     detailCard("Timestamp", formatDate(log.timestamp), ""),
     detailCard("User input", log.userInput || "Not recorded", "", true),
     detailCard("Raw output", log.rawOutput || log.error || "Not recorded", "", true)
@@ -906,13 +1068,13 @@ async function runAiLabRequest() {
     return;
   }
 
-  if (promptMeta?.inputType === "image" && !aiLabImageInput?.dataUrl) {
-    setStatus("Selected prompt requires an attached image");
+  if (promptMeta?.inputType === "image" && !aiLabImageInput?.isImage) {
+    setStatus("Selected prompt requires an attached image file");
     return;
   }
 
-  if (!userInput && !aiLabImageInput?.dataUrl) {
-    setStatus("AI Lab requires user input or an attached image");
+  if (!userInput && !aiLabImageInput) {
+    setStatus("AI Lab requires user input or an attached file");
     return;
   }
 
@@ -931,10 +1093,15 @@ async function runAiLabRequest() {
     promptPath,
     promptLabel: promptMeta?.label || promptPath,
     userInput,
-    inputPreview: userInput.slice(0, 80) || (aiLabImageInput ? "Attached image" : ""),
-    imageAttached: Boolean(aiLabImageInput?.dataUrl),
-    imageType: aiLabImageInput?.type || "",
-    imageSize: aiLabImageInput?.size || 0,
+    inputPreview: userInput.slice(0, 80) || (aiLabImageInput ? aiLabImageInput.name : ""),
+    fileAttached: Boolean(aiLabImageInput),
+    fileName: aiLabImageInput?.name || "",
+    fileType: aiLabImageInput?.type || "",
+    fileSize: aiLabImageInput?.size || 0,
+    fileReadableText: Boolean(aiLabImageInput?.isText),
+    imageAttached: Boolean(aiLabImageInput?.isImage),
+    imageType: aiLabImageInput?.isImage ? aiLabImageInput.type : "",
+    imageSize: aiLabImageInput?.isImage ? aiLabImageInput.size : 0,
     latencyMs: 0,
     usage: {},
     cost: null,
@@ -1191,17 +1358,17 @@ async function init() {
     event.preventDefault();
     aiLabImageDropzone.classList.remove("drag-over");
 
-    const file = Array.from(event.dataTransfer?.files || []).find((entry) => entry.type.startsWith("image/"));
+    const file = Array.from(event.dataTransfer?.files || [])[0];
 
     if (!file) {
-      setStatus("Dropped files did not include an image");
+      setStatus("Drop did not include a file");
       return;
     }
 
     await setAiLabImageFromFile(file);
   });
   aiLabImageDropzone.addEventListener("paste", async (event) => {
-    const file = Array.from(event.clipboardData?.files || []).find((entry) => entry.type.startsWith("image/"));
+    const file = Array.from(event.clipboardData?.files || [])[0];
 
     if (file) {
       event.preventDefault();

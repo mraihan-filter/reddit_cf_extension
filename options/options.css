@@ -386,6 +386,22 @@ input[type="checkbox"]:disabled {
   object-fit: contain;
 }
 
+.lab-file-summary {
+  display: grid;
+  gap: 8px;
+  max-width: 100%;
+  text-align: center;
+}
+
+.lab-file-summary strong {
+  color: #f7f9fb;
+  overflow-wrap: anywhere;
+}
+
+.lab-file-summary small {
+  color: #a9bac7;
+}
+
 .lab-card-header {
   align-items: start;
   display: flex;
